@@ -1,5 +1,5 @@
-import { supabase } from "@/services/UseSupabase.ts";
-import type { AuthError, User, Session } from "@supabase/supabase-js";
+import {supabase} from "@/services/UseSupabase.ts";
+import type {AuthError, User, Session} from "@supabase/supabase-js";
 
 type Provider = 'github' | 'google' | 'facebook' | 'twitter' | 'discord' | 'azure' | 'gitlab' | 'bitbucket' | 'apple';
 
@@ -12,17 +12,17 @@ interface AuthResponse {
 export const AuthService = {
     async login(email: string, password: string): Promise<AuthResponse> {
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const {data, error} = await supabase.auth.signInWithPassword({
                 email,
                 password
             });
 
             if (error) {
                 console.error('Login error:', error);
-                return { user: null, session: null, error };
+                return {user: null, session: null, error};
             }
 
-            return { user: data.user, session: data.session, error: null };
+            return {user: data.user, session: data.session, error: null};
         } catch (error) {
             console.error('Unexpected login error:', error);
             return {
@@ -38,12 +38,12 @@ export const AuthService = {
 
     async logout(): Promise<{ error: AuthError | null }> {
         try {
-            const { error } = await supabase.auth.signOut();
+            const {error} = await supabase.auth.signOut();
             if (error) {
                 console.error('Logout error:', error);
-                return { error };
+                return {error};
             }
-            return { error: null };
+            return {error: null};
         } catch (error) {
             console.error('Unexpected logout error:', error);
             return {
@@ -54,39 +54,61 @@ export const AuthService = {
             };
         }
     },
-
     async register(
         email: string,
         password: string,
-        metadata?: Record<string, any>
+        metadata?: { fullName?: string }
     ): Promise<AuthResponse> {
         try {
+            console.log('Registering user:', { email, metadata });
+
+            // 1. Create auth user
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
-                    data: metadata || {},
+                    data: {
+                        full_name: metadata?.fullName || '',
+                    },
                     emailRedirectTo: `${window.location.origin}/auth/callback`
                 }
             });
 
             if (error) {
-                console.error('Registration error:', error);
-                return { user: null, session: null, error };
+                console.error('Auth error:', error);
+                throw error;
             }
 
-            if (data.user?.identities?.length === 0) {
-                console.warn('User already registered');
-                return {
-                    user: data.user,
-                    session: data.session,
-                    error: { message: 'User already registered', name: 'AuthError' }
-                };
+            // 2. Create profile if user exists
+            if (data.user?.id) {
+                try {
+                    const { error: profileError } = await supabase
+                        .from('profiles')
+                        .upsert({
+                            id: data.user.id,
+                            email: data.user.email,
+                            full_name: metadata?.fullName || '',
+                            username: metadata?.fullName?.toLowerCase().replace(/\s+/g, '_') ||
+                                email.split('@')[0],
+                            created_at: new Date().toISOString()
+                        });
+
+                    if (profileError) {
+                        console.error('Profile error:', profileError);
+                        // Queue for retry or notify admin
+                    }
+                } catch (profileErr) {
+                    console.error('Profile creation failed:', profileErr);
+                }
             }
 
-            return { user: data.user, session: data.session, error: null };
+            return {
+                user: data.user,
+                session: data.session,
+                error: null
+            };
         } catch (error) {
-            console.error('Unexpected registration error:', error);
+            console.error('Registration failed:', error);
             return {
                 user: null,
                 session: null,
@@ -97,18 +119,17 @@ export const AuthService = {
             };
         }
     },
-
     async resetPassword(email: string): Promise<{ error: AuthError | null }> {
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            const {error} = await supabase.auth.resetPasswordForEmail(email, {
                 redirectTo: `${window.location.origin}/auth/reset-password`
             });
 
             if (error) {
                 console.error('Password reset error:', error);
-                return { error };
+                return {error};
             }
-            return { error: null };
+            return {error: null};
         } catch (error) {
             console.error('Unexpected password reset error:', error);
             return {
@@ -122,7 +143,7 @@ export const AuthService = {
 
     async isAuthenticated(): Promise<boolean> {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
+            const {data: {session}} = await supabase.auth.getSession();
             return session !== null;
         } catch (error) {
             console.error('Authentication check error:', error);
@@ -130,22 +151,22 @@ export const AuthService = {
         }
     },
 
-    // In your AuthService.ts
+
     async getUser(): Promise<{ user: User | null; error: AuthError | null }> {
         try {
-            const { data: { user }, error } = await supabase.auth.getUser();
-
+            const {data: {user}, error} = await supabase.auth.getUser();
+            console.log("user details in service: "+   user?.id);
             if (error) {
                 console.error('Get user error:', error);
-                return { user: null, error };
+                return {user: null, error};
             }
 
             if (!user) {
                 console.warn('No user found');
-                return { user: null, error: { message: 'No user found', name: 'AuthError' } };
+                return {user: null, error: {message: 'No user found', name: 'AuthError'}};
             }
 
-            return { user, error: null };
+            return {user, error: null};
         } catch (error) {
             console.error('Unexpected get user error:', error);
             return {
@@ -164,14 +185,14 @@ export const AuthService = {
         data?: Record<string, any>;
     }): Promise<{ user: User | null; error: AuthError | null }> {
         try {
-            const { data: { user }, error } = await supabase.auth.updateUser(updates);
+            const {data: {user}, error} = await supabase.auth.updateUser(updates);
 
             if (error) {
                 console.error('Update user error:', error);
-                return { user: null, error };
+                return {user: null, error};
             }
 
-            return { user, error: null };
+            return {user, error: null};
         } catch (error) {
             console.error('Unexpected update user error:', error);
             return {
@@ -186,21 +207,21 @@ export const AuthService = {
 
     async deleteUser(): Promise<{ error: AuthError | null }> {
         try {
-            const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+            const {data: {user}, error: getUserError} = await supabase.auth.getUser();
 
             if (getUserError || !user) {
                 console.error('Get user for deletion error:', getUserError);
-                return { error: getUserError || { message: 'User not found', name: 'AuthError' } };
+                return {error: getUserError || {message: 'User not found', name: 'AuthError'}};
             }
 
-            const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
+            const {error: deleteError} = await supabase.auth.admin.deleteUser(user.id);
 
             if (deleteError) {
                 console.error('Delete user error:', deleteError);
-                return { error: deleteError };
+                return {error: deleteError};
             }
 
-            return { error: null };
+            return {error: null};
         } catch (error) {
             console.error('Unexpected delete user error:', error);
             return {
@@ -214,7 +235,7 @@ export const AuthService = {
 
     async sendMagicLink(email: string): Promise<{ error: AuthError | null }> {
         try {
-            const { error } = await supabase.auth.signInWithOtp({
+            const {error} = await supabase.auth.signInWithOtp({
                 email,
                 options: {
                     emailRedirectTo: `${window.location.origin}/auth/callback`
@@ -223,9 +244,9 @@ export const AuthService = {
 
             if (error) {
                 console.error('Magic link error:', error);
-                return { error };
+                return {error};
             }
-            return { error: null };
+            return {error: null};
         } catch (error) {
             console.error('Unexpected magic link error:', error);
             return {
@@ -239,14 +260,14 @@ export const AuthService = {
 
     async getSession(): Promise<{ session: Session | null; error: AuthError | null }> {
         try {
-            const { data: { session }, error } = await supabase.auth.getSession();
+            const {data: {session}, error} = await supabase.auth.getSession();
 
             if (error) {
                 console.error('Get session error:', error);
-                return { session: null, error };
+                return {session: null, error};
             }
 
-            return { session, error: null };
+            return {session, error: null};
         } catch (error) {
             console.error('Unexpected get session error:', error);
             return {
@@ -261,19 +282,19 @@ export const AuthService = {
 
     async loginWithSocial(provider: Provider): Promise<{ error: AuthError | null }> {
         try {
-            const { error } = await supabase.auth.signInWithOAuth({
+            const {error} = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: "http://localhost:5173/profile",
                     scopes: provider === 'github' ? 'repo,user' : undefined
                 }
             });
 
             if (error) {
                 console.error(`${provider} login error:`, error);
-                return { error };
+                return {error};
             }
-            return { error: null };
+            return {error: null};
         } catch (error) {
             console.error(`Unexpected ${provider} login error:`, error);
             return {
@@ -287,14 +308,14 @@ export const AuthService = {
 
     async refreshSession(): Promise<{ session: Session | null; error: AuthError | null }> {
         try {
-            const { data: { session }, error } = await supabase.auth.refreshSession();
+            const {data: {session}, error} = await supabase.auth.refreshSession();
 
             if (error) {
                 console.error('Refresh session error:', error);
-                return { session: null, error };
+                return {session: null, error};
             }
 
-            return { session, error: null };
+            return {session, error: null};
         } catch (error) {
             console.error('Unexpected refresh session error:', error);
             return {
