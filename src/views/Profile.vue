@@ -221,6 +221,8 @@ const fetchUser = async () => {
     // Then fetch the user details
     const {user: currentUser, error: userError} = await AuthService.getUser();
     console.log(currentUser)
+
+
     if (userError || !currentUser) {
       console.error('Failed to fetch user:', userError);
       router.push('/login');
@@ -229,7 +231,9 @@ const fetchUser = async () => {
 
     user.value = currentUser;
     editForm.value.fullName = currentUser.user_metadata?.full_name || '';
+    avatarFile.value=currentUser.user_metadata?.picture
     console.log('User loaded:', currentUser);
+    console.log("image"+ currentUser?.user_metadata.picture);
   } catch (error) {
     console.error('Error in fetchUser:', error);
     router.push('/login');
