@@ -28,6 +28,33 @@ const router = createRouter({
       component: () => import('../views/Profile.vue'),
       meta: { requiresAuth: true }
     },
+
+    {
+      path: '/blogs',
+      name: 'Blogs',
+      component: () => import('../views/Blogs.vue'),
+      // meta: { requiresAuth: true }
+    },
+
+    {
+      path: '/blog-details/:slug',
+      name: 'BlogDetails',
+      component: () => import('@/views/BlogDetails.vue'),
+      props: true
+    },
+    {
+      path: '/new-blog',
+      name: 'New Blog',
+      component: () => import('../views/BlogsForm.vue'),
+      // meta: { requiresAuth: true }
+    },
+
+    {
+      path: '/new-blog',
+      name: 'New Blog',
+      component: () => import('../views/BlogsForm.vue'),
+      // meta: { requiresAuth: true }
+    },
     {
       path: '/register',
       name: 'register',
