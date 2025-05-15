@@ -7,6 +7,15 @@ export interface BlogSubtitle {
     created_at: string;
 }
 
+export interface category {
+
+    id: string;
+    categoryName: string;
+    created_at: string;
+
+
+}
+
 export interface BlogComment {
     id: string;
     blog_id: string;
@@ -61,4 +70,6 @@ export interface BlogsModel {
     };
     like_count: number;
     comment_count: number;
+
+    categoryId: string;
 }
