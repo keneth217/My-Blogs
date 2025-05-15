@@ -2,6 +2,21 @@
   <div class="max-w-7xl mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-8">Latest Blog Posts</h1>
 
+
+    <div>
+      <ul class="flex space-x-4 mb-8">
+        <li v-for="category in categories" :key="category.id">
+          <button
+              class="text-gray-600 hover:bg-blue-500 Hover:text-white px-3 py-1 rounded-full text-sm cursor-pointer select-none"
+              @click="() => fetchBlogsByCategory(category.id)"
+          >
+            {{ category.name }}
+          </button>
+        </li>
+      </ul>
+
+    </div>
+
     <div v-if="loading" class="flex justify-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
     </div>
@@ -45,8 +60,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import {ref, onMounted} from 'vue';
+import {useRouter} from 'vue-router';
 import {BlogsServices} from "@/services/BlogsServices.ts";
 import type {BlogsModel} from "@/models/BlogsModel.ts";
 
@@ -55,6 +70,16 @@ const router = useRouter();
 const blogs = ref<BlogsModel[]>([]);
 const loading = ref(true);
 
+interface category {
+
+  id: string;
+  name: string;
+  created_at: string;
+
+
+}
+
+const categories = ref<category[]>([]);
 // Format date for display
 const formatDate = (dateString: string | null) => {
   if (!dateString) return 'Unpublished';
@@ -64,12 +89,27 @@ const formatDate = (dateString: string | null) => {
     day: 'numeric'
   });
 };
+const fetchBlogsCategories = async () => {
+  try {
+    loading.value = true;
+    const response = await BlogsServices.fetchAllCategories();
+    if (response) {
+
+      categories.value = Array.isArray(response) ? response : [response];
+      console.log('Fetched blog categories:', response);
+      // Handle categories if needed
+    }
+  } catch (error) {
+    console.error('Error fetching blog categories:', error);
+  } finally {
+    loading.value = false;
+  }
+}
 
 const fetchBlogs = async () => {
   try {
     loading.value = true;
     const response = await BlogsServices.getBlogs();
-
 
 
     if (response) {
@@ -84,11 +124,28 @@ const fetchBlogs = async () => {
   }
 };
 
+const fetchBlogsByCategory = async (category: string) => {
+  try {
+    loading.value = true;
+    const response = await BlogsServices.fetchBlogsByCategory(category);
+    if (response) {
+      console.log('Fetched blogs by category:', response);
+      blogs.value = Array.isArray(response) ? response : [response];
+    }
+  } catch (error) {
+    console.error('Error fetching blogs by category:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
 const navigateToBlog = (slug: string) => {
   router.push(`/blog-details/${slug}`);
 };
 onMounted(() => {
-fetchBlogs()
+  fetchBlogs()
+
+  fetchBlogsCategories()
 });
 </script>
 
