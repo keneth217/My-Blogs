@@ -67,6 +67,21 @@
             <option value="scheduled">Scheduled</option>
           </select>
         </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="status">Category*</label>
+          <select
+              v-model="blogData.categoryId"
+              id="status"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+          >
+            <option v-for="categories in categories" :key="categories.id" :value="categories.id">{{
+                categories.name
+              }}
+            </option>
+
+          </select>
+        </div>
         <div v-if="blogData.status === 'scheduled'">
           <label class="block text-gray-700 text-sm font-bold mb-2" for="scheduled_at">Schedule Date/Time</label>
           <input
@@ -155,7 +170,8 @@
 
       <div class="mb-8">
         <h3 class="text-xl font-semibold mb-4">Subtitle Sections</h3>
-        <div v-for="(subtitle, index) in blogData.blog_subtitles" :key="index" class="mb-6 p-4 border rounded-lg bg-gray-50">
+        <div v-for="(subtitle, index) in blogData.blog_subtitles" :key="index"
+             class="mb-6 p-4 border rounded-lg bg-gray-50">
           <div class="flex justify-between items-center mb-3">
             <h4 class="font-medium">Section {{ index + 1 }}</h4>
             <button
@@ -204,9 +220,11 @@
         >
           <span v-if="!isSubmitting">Save Blog</span>
           <span v-else class="flex items-center">
-            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                 viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             Saving...
           </span>
@@ -222,12 +240,11 @@
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
-import { supabase } from '@/services/UseSupabase';
-import { AuthService } from "@/services/AuthService";
-import type { BlogsModel } from "@/models/BlogsModel.ts";
+import {ref, onMounted, watch} from 'vue';
+import {supabase} from '@/services/UseSupabase';
+import {AuthService} from "@/services/AuthService";
+import type {BlogsModel} from "@/models/BlogsModel.ts";
 
 interface Subtitle {
   id: string;
@@ -243,10 +260,12 @@ interface Tag {
   slug: string;
 }
 
+
 const blogData = ref<BlogsModel>({
   id: '',
   title: '',
   slug: '',
+  categoryId: '',
   main_content: '',
   cover_image: '',
   cover_image_credit: '',
@@ -274,8 +293,21 @@ const blogData = ref<BlogsModel>({
 
 const availableTags = ref<Tag[]>([]);
 const selectedTags = ref<string[]>([]);
+const newTagName = ref('');
 const isSubmitting = ref(false);
 
+interface category {
+
+  id: string;
+  name: string;
+  created_at: string;
+
+
+}
+
+const categories = ref<category[]>([]);
+
+// Helper Functions
 const addSubtitle = () => {
   blogData.value.blog_subtitles.push({
     id: '',
@@ -284,55 +316,6 @@ const addSubtitle = () => {
     blog_id: '',
     order_index: blogData.value.blog_subtitles.length
   });
-};
-const newTagName = ref('');
-const addNewTag = async () => {
-  if (!newTagName.value.trim()) return;
-
-  try {
-    const existingTag = availableTags.value.find(t =>
-        t.name.toLowerCase() === newTagName.value.trim().toLowerCase()
-    );
-
-    if (existingTag) {
-      if (!selectedTags.value.includes(existingTag.id)) {
-        selectedTags.value.push(existingTag.id);
-      }
-    } else {
-      // Get the current session
-      const session = await AuthService.getSession();
-
-      const { data: newTag, error } = await supabase
-          .from('blog_tags')
-          .insert({
-            name: newTagName.value.trim(),
-            user_id: session.session?.user.id, // Associate with current user
-            blog_id: blogData.value.author_id,
-
-          })
-          .select()
-          .single();
-
-      if (error) throw error;
-
-      availableTags.value.push(newTag);
-      selectedTags.value.push(newTag.id);
-    }
-
-    newTagName.value = '';
-  } catch (error) {
-    console.error('Error adding new tag:', error);
-    alert('You need proper permissions to add new tags');
-  }
-};
-
-const removeTag = (tagId: string) => {
-  selectedTags.value = selectedTags.value.filter(id => id !== tagId);
-};
-
-const getTagName = (tagId: string) => {
-  const tag = availableTags.value.find(t => t.id === tagId);
-  return tag ? tag.name : '';
 };
 
 const removeSubtitle = (index: number) => {
@@ -354,22 +337,103 @@ const generateSlug = (title: string) => {
       .trim();
 };
 
-watch(() => blogData.value.title, (newTitle) => {
-  if (!blogData.value.slug) {
-    blogData.value.slug = generateSlug(newTitle);
+// Tag Management
+const addNewTag = async () => {
+  if (!newTagName.value.trim()) return;
+
+  try {
+    const trimmedName = newTagName.value.trim();
+
+    // Check if tag exists
+    const {data: existingTags, error: existingError} = await supabase
+        .from('blog_tags')
+        .select()
+        .ilike('name', trimmedName);
+
+    if (existingError) throw existingError;
+
+    if (existingTags && existingTags.length > 0) {
+      const existingTag = existingTags[0];
+      if (!selectedTags.value.includes(existingTag.id)) {
+        selectedTags.value.push(existingTag.id);
+      }
+    } else {
+      // Create new tag
+      const {data: {user}} = await supabase.auth.getUser();
+
+      const {data: insertedTag, error: insertError} = await supabase
+          .from('blog_tags')
+          .insert({
+            name: trimmedName,
+            user_id: user?.id || null
+          })
+          .select()
+          .single();
+      console.log(insertedTag);
+      if (insertError) throw insertError;
+
+      if (!insertedTag?.id) {
+        throw new Error("Newly inserted tag has no ID");
+      }
+
+      availableTags.value.push(insertedTag);
+      selectedTags.value.push(insertedTag.id);
+    }
+
+    newTagName.value = '';
+  } catch (error) {
+    console.error('Error adding tag:', error);
+    alert(`Failed to add tag: ${error.message}`);
   }
-});
-
-const fetchTags = async () => {
-  const session = await AuthService.getSession();
-  const { data, error } = await supabase
-      .from('blog_tags')
-      .select('*')
-      .or(`user_id.eq.${session.session?.user.id},user_id.is.null`);
-
-  if (data) availableTags.value = data;
 };
 
+const getTagName = (tagId: string): string => {
+  const tag = availableTags.value.find(tag => tag.id === tagId);
+  return tag ? tag.name : 'Unknown Tag';
+};
+
+const removeTag = (tagId: string) => {
+  selectedTags.value = selectedTags.value.filter(id => id !== tagId);
+};
+
+
+const fetchCategories = async () => {
+  try {
+    const { data, error } = await supabase
+        .from('category')
+        .select('*')
+        .order('name', {ascending: true});
+
+    if (error) throw error;
+
+    if (data) {
+      categories.value = data;
+      console.log(data, ": categories");
+      console.log(data, ": categories");
+
+    }
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+  }
+};
+
+
+
+const fetchTags = async () => {
+  try {
+    const {data, error} = await supabase
+        .from('blog_tags')
+        .select('*')
+        .order('name', {ascending: true});
+
+    if (data) availableTags.value = data;
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+  }
+};
+
+// Form Validation
 const validateForm = () => {
   if (!blogData.value.title || !blogData.value.slug || !blogData.value.main_content || !blogData.value.excerpt) {
     return false;
@@ -377,20 +441,20 @@ const validateForm = () => {
   return blogData.value.blog_subtitles.every(sub => sub.subtitle && sub.content);
 };
 
+// Blog Submission
 const submitBlog = async () => {
   if (!validateForm() || isSubmitting.value) return;
   isSubmitting.value = true;
-
+  console.log(blogData.value + " blogData.value");
   try {
-    console.log('Starting blog submission...');
-    console.log('Current author data:', blogData.value.author);
-
+    // 1. Calculate reading time
     let allContent = blogData.value.main_content;
     blogData.value.blog_subtitles.forEach(sub => {
       allContent += ` ${sub.subtitle} ${sub.content}`;
     });
     blogData.value.reading_time_minutes = calculateReadingTime(allContent);
 
+    // 2. Set publication dates
     if (blogData.value.status === 'published') {
       blogData.value.published_at = new Date().toISOString();
       blogData.value.is_published = true;
@@ -400,15 +464,8 @@ const submitBlog = async () => {
     blogData.value.created_at = currentDate;
     blogData.value.updated_at = currentDate;
 
-    console.log('Preparing to insert blog with data:', {
-      title: blogData.value.title,
-      slug: blogData.value.slug,
-      author_id: blogData.value.author_id,
-      author: blogData.value.author,
-      // Other fields...
-    });
-
-    const { data: blog, error: blogError } = await supabase
+    // 3. Insert blog
+    const {data: blog, error: blogError} = await supabase
         .from('blogs')
         .insert({
           title: blogData.value.title,
@@ -417,6 +474,7 @@ const submitBlog = async () => {
           cover_image: blogData.value.cover_image,
           cover_image_credit: blogData.value.cover_image_credit,
           status: blogData.value.status,
+          category_id: blogData.value.categoryId,
           excerpt: blogData.value.excerpt,
           subtitle: blogData.value.subtitle,
           author_id: blogData.value.author_id,
@@ -431,8 +489,8 @@ const submitBlog = async () => {
         .single();
 
     if (blogError) throw blogError;
-    console.log('Blog inserted successfully:', blog);
 
+    // 4. Insert subtitles
     const subtitlesToInsert = blogData.value.blog_subtitles.map((sub, index) => ({
       blog_id: blog.id,
       subtitle: sub.subtitle,
@@ -440,33 +498,31 @@ const submitBlog = async () => {
       order_index: index
     }));
 
-    console.log('Inserting subtitles:', subtitlesToInsert);
-    const { error: subtitleError } = await supabase
+    const {error: subtitleError} = await supabase
         .from('blog_subtitles')
         .insert(subtitlesToInsert);
 
     if (subtitleError) throw subtitleError;
 
+    // 5. Handle tags
     if (selectedTags.value.length > 0) {
       const tagRelations = selectedTags.value.map(tagId => ({
         blog_id: blog.id,
         tag_id: tagId
       }));
 
-      console.log('Inserting tag relations:', tagRelations);
-      const { error: tagError } = await supabase
+      const {error: tagError} = await supabase
           .from('blog_tag_relations')
           .insert(tagRelations);
 
       if (tagError) throw tagError;
     }
-
-    console.log('Blog creation complete');
+    console.log(blogData.value + " blogData.value secueeess");
     alert('Blog created successfully!');
     resetForm();
   } catch (error) {
     console.error('Blog creation failed:', error);
-    alert('Failed to create blog');
+    alert(`Failed to create blog: ${error.message}`);
   } finally {
     isSubmitting.value = false;
   }
@@ -505,20 +561,12 @@ const resetForm = () => {
   addSubtitle();
 };
 
+// Initializef
 onMounted(async () => {
   try {
-    console.log('Fetching user session...');
     const response = await AuthService.getSession();
-    console.log('Session response:', response);
-
+    console.log(response.session?.user.user_metadata.avatar_url + " user  response");
     if (response.session?.user) {
-      console.log('User data from session:', {
-        id: response.session.user.id,
-        email: response.session.user.email,
-        metadata: response.session.user.user_metadata,
-        app_metadata: response.session.user.app_metadata
-      });
-
       blogData.value.author_id = response.session.user.id;
       blogData.value.author = {
         id: response.session.user.id,
@@ -530,19 +578,23 @@ onMounted(async () => {
             response.session.user.user_metadata?.picture ||
             '/default-avatar.jpg'
       };
-
-      console.log('Author data set:', blogData.value.author);
-    } else {
-      console.warn('No user session found');
     }
+    await fetchCategories()
+    await fetchTags();
+    addSubtitle();
   } catch (error) {
-    console.error('Error fetching session:', error);
+    console.error('Initialization error:', error);
   }
+});
 
-  await fetchTags();
-  addSubtitle();
+// Watch for title changes to generate slug
+watch(() => blogData.value.title, (newTitle) => {
+  if (!blogData.value.slug) {
+    blogData.value.slug = generateSlug(newTitle);
+  }
 });
 </script>
+
 
 <style scoped>
 </style>
