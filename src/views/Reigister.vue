@@ -202,6 +202,7 @@ const handleRegister = async () => {
   authError.value = '';
 
   try {
+    console.log('Registering user:', registerForm);
     const response = await AuthService.register(
         registerForm.email,
         registerForm.password,
@@ -217,7 +218,7 @@ const handleRegister = async () => {
     console.log('Registration successful:', response);
 
     // Redirect to login or directly log them in
-    router.push('/login?registered=true');
+    router.push('/login');
 
   } catch (error) {
     console.error('Registration error:', error);
@@ -241,7 +242,7 @@ const loginWithProvider = async (provider: 'google' | 'github') => {
 
     // Successful social login
     console.log(`${provider} login successful:`, response);
-    router.push('/dashboard');
+    router.push('/profile');
 
   } catch (error) {
     console.error(`${provider} login error:`, error);
