@@ -16,6 +16,53 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
       meta: { requiresAuth: false }
     },
+
+    {
+      path: '/dashboard',
+      name: 'Dashboard',
+      component: () => import('../views/Dashboard.vue'),
+      meta: { requiresAuth: true },
+      children:[
+
+        {
+          path: '',
+          name: 'Dashboard Stats',
+          component: () => import('../views/DashboardStarts.vue'),
+
+        },
+        {
+          path: 'blogs',
+          name: 'Blogs',
+          component: () => import('../views/Blogs.vue'),
+
+        },
+        {
+          path: 'edit-blog/:id',
+          name: 'Edit Blog',
+          component: () => import('@/views/EditBlog.vue'),
+          props: true
+        },
+        {
+          path: 'new-blog',
+          name: 'New Blog',
+          component: () => import('../views/BlogsForm.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'profile',
+          name: 'profile',
+          component: () => import('../views/Profile.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: 'blog-details/:slug',
+          name: 'BlogDetails',
+          component: () => import('@/views/BlogDetails.vue'),
+          props: true
+        },
+
+      ]
+    },
     {
       path: '/login',
       name: 'login',
@@ -23,38 +70,18 @@ const router = createRouter({
       meta: { requiresAuth: false, redirectIfAuthenticated: true }
     },
     {
-      path: '/profile',
-      name: 'profile',
-      component: () => import('../views/Profile.vue'),
-      meta: { requiresAuth: true }
+      path: '/published-blogs',
+      name: 'Published Blogs',
+      component: () => import('../views/PublishedBlogs.vue'),
     },
 
     {
-      path: '/blogs',
-      name: 'Blogs',
-      component: () => import('../views/Blogs.vue'),
-      // meta: { requiresAuth: true }
+      path: '/all-published-blogs/:slug',
+      name: 'all-Published Blogs',
+      component: () => import('../views/PublishedBlogsDetails.vue'),
+
     },
 
-    {
-      path: '/blog-details/:slug',
-      name: 'BlogDetails',
-      component: () => import('@/views/BlogDetails.vue'),
-      props: true
-    },
-    {
-      path: '/new-blog',
-      name: 'New Blog',
-      component: () => import('../views/BlogsForm.vue'),
-      // meta: { requiresAuth: true }
-    },
-
-    {
-      path: '/new-blog',
-      name: 'New Blog',
-      component: () => import('../views/BlogsForm.vue'),
-      // meta: { requiresAuth: true }
-    },
     {
       path: '/register',
       name: 'register',
