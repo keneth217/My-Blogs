@@ -38,7 +38,8 @@
       <div class="text-center mb-16">
         <h1 class="text-4xl font-light tracking-wide mb-4 text-gray-800">
           <span class="font-extralight">Exploring </span>
-          <span class="font-medium bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+          <span
+              class="font-medium bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
         Tomorrow's Ideas
       </span>
         </h1>
@@ -148,14 +149,15 @@
       <div v-else class="text-center text-gray-500 py-12">
         <h1>No blogs found.</h1>
 
-        <p>  There are no posts in this category yet. Check back later!</p>
+        <p> There are no posts in this category yet. Check back later!</p>
       </div>
     </section>
 
     <!-- About Section -->
     <section class="bg-gradient-to-r from-gray-50 to-gray-100 py-16">
       <div class="container mx-auto px-4">
-        <h2 class="text-2xl font-light mb-8 text-gray-800 border-b border-gray-200 pb-2 flex justify-center items-center">About</h2>
+        <h2 class="text-2xl font-light mb-8 text-gray-800 border-b border-gray-200 pb-2 flex justify-center items-center">
+          About</h2>
         <div class="max-w-3xl mx-auto space-y-6 text-gray-600  ">
           <p>
             A minimalist chronicle of insights shaped by the intersection of technology and human experience.
@@ -179,9 +181,9 @@
             community.
           </p>
         </div>
-       <div class="flex justify-center items-start font-bold mt-10 font-italic">
-         <p>Debugging life, one story at a time.</p>
-       </div>
+        <div class="flex justify-center items-start font-bold mt-10 font-italic">
+          <p>Debugging life, one story at a time.</p>
+        </div>
       </div>
     </section>
 
@@ -278,7 +280,7 @@ const fetchBlogsByCategory = async (categoryId: string) => {
 const scrollToContent = () => {
   const nextSection = document.querySelector('main').nextElementSibling;
   if (nextSection) {
-    nextSection.scrollIntoView({ behavior: 'smooth' });
+    nextSection.scrollIntoView({behavior: 'smooth'});
   }
 };
 
@@ -350,6 +352,7 @@ html {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 @keyframes bounce {
   0%, 20%, 50%, 80%, 100% {
     transform: translateY(0);
