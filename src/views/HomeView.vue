@@ -38,18 +38,34 @@
       <div class="text-center mb-16">
         <h1 class="text-4xl font-light tracking-wide mb-4 text-gray-800">
           <span class="font-extralight">Exploring </span>
-          <span
-              class="font-medium bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-            Tomorrow's Ideas
-          </span>
+          <span class="font-medium bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+        Tomorrow's Ideas
+      </span>
         </h1>
         <p class="text-gray-600 max-w-2xl mx-auto">
           A collection of thoughts on technology, design, and the future of our digital landscape.
         </p>
         <p class="mt-10">Debugging life, one story at a time.</p>
-      </div>
 
-      <router-view/>
+        <!-- Animated Down Arrow -->
+        <div class="mt-16 animate-bounce rounded-full border-2 border-gray-300 p-2 w-12 h-12 mx-auto">
+          <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-8 w-8 mx-auto text-gray-600 cursor-pointer hover:text-black transition-colors duration-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              @click="scrollToContent"
+          >
+            <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+            />
+          </svg>
+        </div>
+      </div>
     </main>
 
     <!-- Blog Section -->
@@ -69,7 +85,7 @@
             class="px-4 py-1 rounded-full text-sm cursor-pointer select-none"
             :class="{
             'text-white bg-blue-500': !currentCategoryId,
-            'text-gray-600 bg-gray-200 hover:bg-blue-500 hover:text-white': currentCategoryId
+            'text-gray-600 bg-gray-200 hover:bg-gray-700 hover:text-white': currentCategoryId
           }"
             @click="fetchBlogs()"
         >
@@ -81,7 +97,7 @@
             class="px-4 py-1 rounded-full text-sm cursor-pointer select-none"
             :class="{
             'text-white bg-blue-500': currentCategoryId === category.id,
-            'text-gray-600 bg-gray-200 hover:bg-blue-500 hover:text-white': currentCategoryId !== category.id
+            'text-gray-600 bg-gray-200 hover:bg-gray-400 hover:text-white': currentCategoryId !== category.id
           }"
             @click="fetchBlogsByCategory(category.id)"
         >
@@ -259,6 +275,13 @@ const fetchBlogsByCategory = async (categoryId: string) => {
   }
 };
 
+const scrollToContent = () => {
+  const nextSection = document.querySelector('main').nextElementSibling;
+  if (nextSection) {
+    nextSection.scrollIntoView({ behavior: 'smooth' });
+  }
+};
+
 // Helper functions
 const getCategoryName = (categoryId: string | null): string => {
   if (!categoryId) return "All";
@@ -326,5 +349,20 @@ html {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-20px);
+  }
+  60% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 2s infinite;
 }
 </style>
