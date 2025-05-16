@@ -10,7 +10,7 @@ export interface BlogSubtitle {
 export interface category {
 
     id: string;
-    categoryName: string;
+    name: string;
     created_at: string;
 
 
