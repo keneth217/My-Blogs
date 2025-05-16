@@ -15,9 +15,33 @@
   </div>
 
   <div v-else-if="blog" class="max-w-4xl mx-auto py-8 px-4 relative">
+    <!-- Admin controls -->
+    <div v-if="isAuthor" class="flex justify-end space-x-3 mb-6">
+      <button
+          @click="isPublished ? unPublishBlog() : publishBlog()"
+          class="text-white px-4 py-2 rounded-md text-sm"
+          :class="isPublished ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-500 hover:bg-yellow-600'"
+      >
+        {{ isPublished ? 'Unpublish' : 'Publish' }}
+      </button>
+      <router-link
+          :to="`/dashboard/edit-blog/${blog.id}`"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+      >
+        Edit Blog
+      </router-link>
+      <button
+          @click="confirmDelete"
+          class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm"
+      >
+        Delete Blog
+      </button>
+    </div>
+
     <!-- Fixed like/comment counts on the side -->
     <div
-        class="fixed left-4 top-1/2 transform -translate-y-1/2 z-10 flex flex-col items-center space-y-4 bg-white p-2 rounded-lg shadow-lg">
+        class="fixed left-32 top-1/2 transform -translate-y-1/2 z-10 flex flex-col items-center space-y-4 bg-white p-2 rounded-lg shadow-lg"
+    >
       <button
           @click="toggleLike"
           class="flex flex-col items-center group"
@@ -85,6 +109,24 @@
       <h1 class="text-4xl font-bold mb-2">{{ blog.title }}</h1>
       <p class="text-xl text-gray-600 mb-6">{{ blog.subtitle }}</p>
     </header>
+
+    <!-- Delete confirmation modal -->
+    <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg max-w-sm w-full">
+        <h3 class="text-lg font-bold mb-4">Confirm Deletion</h3>
+        <p class="mb-6">Are you sure you want to delete this blog?</p>
+        <div class="flex justify-end space-x-3">
+          <button @click="showDeleteModal = false" class="px-4 py-2 border rounded-md">Cancel</button>
+          <button
+              @click="deleteBlog"
+              class="bg-red-600 text-white px-4 py-2 rounded-md"
+              :disabled="isDeleting"
+          >
+            {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <article class="prose max-w-none mb-12">
       <div v-html="blog.main_content"></div>
@@ -175,12 +217,18 @@ const user = ref<any>(null)
 const newComment = ref('')
 const isLiked = ref(false)
 const loading = ref(true)
+const showDeleteModal = ref(false)
+const isDeleting = ref(false)
+
+const isPublished = computed(() => blog.value?.is_published)
+const isAuthor = computed(() => user.value?.id === blog.value?.author_id)
 
 const fetchBlog = async () => {
   try {
     loading.value = true
     const response = await BlogsServices.getBlogBySlug(route.params.slug as string)
-console.log(response)
+    console.log(response)
+
     if (!response) {
       await router.push('/404')
       return
@@ -193,6 +241,26 @@ console.log(response)
     await router.push('/404')
   } finally {
     loading.value = false
+  }
+}
+
+const publishBlog = async () => {
+  if (!blog.value) return
+  try {
+    await BlogsServices.publishBlog(blog.value.id)
+    blog.value.is_published = true
+  } catch (error) {
+    console.error('Error publishing blog:', error)
+  }
+}
+
+const unPublishBlog = async () => {
+  if (!blog.value) return
+  try {
+    await BlogsServices.unpublishBlog(blog.value.id)
+    blog.value.is_published = false
+  } catch (error) {
+    console.error('Error unpublishing blog:', error)
   }
 }
 
@@ -277,7 +345,10 @@ const nestedComments = computed(() => {
 
   blog.value.comments.forEach(comment => {
     if (comment.parent_id) {
-      commentsMap.get(comment.parent_id)?.replies.push(comment)
+      const parentComment = commentsMap.get(comment.parent_id)
+      if (parentComment) {
+        parentComment.replies.push(comment)
+      }
     }
   })
 
@@ -291,6 +362,22 @@ const formatDate = (dateString: string | null) => {
     month: 'long',
     day: 'numeric'
   })
+}
+
+const confirmDelete = () => showDeleteModal.value = true
+
+const deleteBlog = async () => {
+  if (!blog.value?.id) return
+  isDeleting.value = true
+  try {
+    await BlogsServices.deleteBlog(blog.value.id)
+    router.push('/blogs')
+  } catch (error) {
+    console.error('Delete failed:', error)
+  } finally {
+    isDeleting.value = false
+    showDeleteModal.value = false
+  }
 }
 
 onMounted(fetchBlog)
