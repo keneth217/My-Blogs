@@ -177,8 +177,6 @@ export const BlogsServices = {
             throw new Error(error instanceof Error ? error.message : 'Failed to fetch blog');
         }
     },
-
-
     async checkUserLike({ blog_id, user_id }: LikeParams) {
         try {
             const { data, error } = await supabase
@@ -186,7 +184,7 @@ export const BlogsServices = {
                 .select('*')
                 .eq('blog_id', blog_id)
                 .eq('user_id', user_id)
-                .single();
+                .maybeSingle()
 
             if (error) throw error;
             return data;
@@ -195,7 +193,6 @@ export const BlogsServices = {
             throw new Error('Failed to check user like');
         }
     },
-
     async unlikeBlog({ blog_id, user_id }: LikeParams) {
         try {
             const { data, error } = await supabase
@@ -211,7 +208,6 @@ export const BlogsServices = {
             throw new Error('Failed to unlike blog');
         }
     },
-
     async likeBlog({ blog_id, user_id }: LikeParams) {
         try {
             const { data, error } = await supabase
@@ -225,7 +221,6 @@ export const BlogsServices = {
             throw new Error('Failed to like blog');
         }
     },
-
     async addComment({ blog_id, user_id, content }: CommentParams) {
         try {
             const { data, error } = await supabase
@@ -240,7 +235,6 @@ export const BlogsServices = {
             throw new Error('Failed to add comment');
         }
     },
-
     async fetchBlogsByCategory(categoryId: string) {
         try {
             const { data, error }: PostgrestResponse<BlogsModel[]> = await supabase
@@ -262,7 +256,6 @@ export const BlogsServices = {
             throw new Error(error instanceof Error ? error.message : 'Failed to fetch blogs by category');
         }
     },
-
     async fetchAllCategories() {
         try {
             const { data, error }: PostgrestResponse<{ id: string; name: string }[]> = await supabase
@@ -282,7 +275,79 @@ export const BlogsServices = {
             console.error('Error fetching categories:', error);
             throw new Error(error instanceof Error ? error.message : 'Failed to fetch categories');
         }
+    },
+
+    async publishBlog(id: string) {
+        try {
+            const { data, error } = await supabase
+                .from('blogs')
+                .update({ is_published: true, published_at: new Date() })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error publishing blog:', error);
+            throw error;
+        }
+
+
+    },
+    async unpublishBlog(id: string) {
+        try {
+            const { data, error } = await supabase
+                .from('blogs')
+                .update({
+                    is_published: false,
+                    published_at: null,
+                })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error unpublishing blog:', error);
+            throw error;
+        }
+    },
+
+    async getPublishedBlogs() {
+        try {
+            const { data, error } = await supabase
+                .from('blogs')
+                .select('*')
+                .eq('is_published', true)
+                .order('published_at', { ascending: false });
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error fetching published blogs:', error);
+            throw error;
+        }
+    },
+
+     async fetchPublishedBlogsByCategory(categoryId: string) {
+        try {
+            const { data, error } = await supabase
+                .from('blogs')
+                .select('*')
+                .eq('category_id', categoryId)
+                .eq('is_published', true)
+                .order('published_at', { ascending: false });
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error fetching blogs by category:', error);
+            throw error;
+        }
     }
+
 
 
 }
