@@ -115,9 +115,10 @@
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { AuthService } from '@/services/AuthService';
+import {useToast} from "vue-toast-notification";
 
 const router = useRouter();
-
+const $toast = useToast();
 interface LoginForm {
   email: string;
   password: string;
@@ -177,13 +178,26 @@ const handleLogin = async () => {
     const response = await AuthService.login(loginForm.email, loginForm.password);
 
     if (response.error) {
+
+      $toast.error(response.error.message, {
+        duration: 2000,
+        position: 'top-right',
+        dismissible: true,
+        type: 'error',
+      })
       authError.value = response.error.message || 'Login failed. Please try again.';
       return;
     }
 
     // Successful login
     console.log('Login successful:', response);
-    router.push('/profile');
+    $toast.success("Login successful,Redirecting......", {
+      duration: 2000,
+      position: 'top-right',
+      dismissible: true,
+      type: 'success',
+    })
+    router.push('/dashboard');
 
   } catch (error) {
     console.error('Login error:', error);
@@ -207,7 +221,9 @@ const loginWithProvider = async (provider: 'google' | 'github') => {
 
     // Successful social login
     console.log(`${provider} login successful:`, response);
-    router.push('/profile');
+
+
+    router.push('/dashboard');
 
   } catch (error) {
     console.error(`${provider} login error:`, error);
