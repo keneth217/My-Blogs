@@ -57,14 +57,14 @@
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="status">Status*</label>
           <select
-              v-model="blogData.status"
+              v-model="blogData.is_published"
               id="status"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
           >
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-            <option value="scheduled">Scheduled</option>
+            <option value="false">false</option>
+            <option value="true">true</option>
+
           </select>
         </div>
         <div>
