@@ -113,13 +113,7 @@
 
       <div class="mb-6">
         <label class="block text-gray-700 text-sm font-bold mb-2" for="main_content">Main Content*</label>
-        <textarea
-            v-model="blogData.main_content"
-            id="main_content"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-64"
-            placeholder="Write your content here..."
-            required
-        ></textarea>
+        <RichTextEditor v-model="blogData.main_content" />
       </div>
 
       <div class="mb-6">
@@ -253,6 +247,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/services/UseSupabase';
 import { BlogsServices } from "@/services/BlogsServices";
 import type { BlogsModel } from "@/models/BlogsModel";
+import RichTextEditor from "@/views/RichTextEditor.vue";
 
 interface Category {
   id: string;
