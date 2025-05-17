@@ -240,6 +240,9 @@ import {supabase} from '@/services/UseSupabase';
 import {AuthService} from "@/services/AuthService";
 import type {BlogsModel} from "@/models/BlogsModel.ts";
 import RichTextEditor from "@/views/RichTextEditor.vue";
+import {useToast} from "vue-toast-notification";
+
+const $toast = useToast();
 
 interface Subtitle {
   id: string;
@@ -485,6 +488,8 @@ const submitBlog = async () => {
 
     if (blogError) throw blogError;
 
+    $toast.error(blogError);
+
     // 4. Insert subtitles
     const subtitlesToInsert = blogData.value.blog_subtitles.map((sub, index) => ({
       blog_id: blog.id,
@@ -514,6 +519,13 @@ const submitBlog = async () => {
     }
     console.log(blogData.value + " blogData.value secueeess");
     alert('Blog created successfully!');
+
+    $toast.success('Blog created successfully!',{
+      position: 'top-right',
+      duration: 3000,
+      dismissible: true,
+      type: 'success'
+    });
     resetForm();
   } catch (error) {
     console.error('Blog creation failed:', error);
