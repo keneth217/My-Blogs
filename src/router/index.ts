@@ -18,6 +18,13 @@ const router = createRouter({
     },
 
     {
+      path: '/category/:name',
+      name: 'Blog Category',
+      component: () => import('../views/CategoryPage.vue'),
+      meta: { requiresAuth: false }
+    },
+
+    {
       path: '/dashboard',
       name: 'Dashboard',
       component: () => import('../views/Dashboard.vue'),
