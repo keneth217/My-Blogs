@@ -12,6 +12,7 @@ export interface category {
     id: string;
     name: string;
     created_at: string;
+    description: string;
 
 
 }
@@ -71,5 +72,5 @@ export interface BlogsModel {
     like_count: number;
     comment_count: number;
 
-    categoryId: string;
+    category_id: string;
 }
