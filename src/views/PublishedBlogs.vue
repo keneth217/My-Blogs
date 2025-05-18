@@ -69,7 +69,7 @@
         </div>
 
         <div class="p-6">
-          <div class="flex items-center text-sm text-gray-500 mb-2">
+          <div class="flex justify-around items-center text-sm text-gray-500 mb-2">
             <span>{{ formatDate(blog.published_at) }}</span>
             <span class="mx-2">•</span>
             <span>{{ blog.reading_time_minutes }} min read</span>
@@ -78,7 +78,7 @@
           <p class="text-gray-600 mb-4 line-clamp-3">{{ blog.excerpt }}</p>
           <div class="flex items-center">
             <img
-                :src="blog.author?.avatar || '/person.jpg'"
+                :src="blog.author?.avatar_url || '/person.jpg'"
                 :alt="blog.author?.full_name || 'Author'"
                 class="w-8 h-8 rounded-full mr-2"
                 @error="handleAuthorImageError"
