@@ -371,7 +371,7 @@ const deleteBlog = async () => {
   isDeleting.value = true
   try {
     await BlogsServices.deleteBlog(blog.value.id)
-    router.push('/blogs')
+    router.push('/dashboard/blogs')
   } catch (error) {
     console.error('Delete failed:', error)
   } finally {
