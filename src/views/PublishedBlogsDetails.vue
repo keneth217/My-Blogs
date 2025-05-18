@@ -19,7 +19,7 @@
 
     <!-- Fixed like/comment counts on the side -->
     <div
-        class="fixed left-32 top-1/2 transform -translate-y-1/2 z-10 flex flex-col items-center space-y-4 bg-white p-2 rounded-lg shadow-lg"
+        class="fixed hidden md:block left-32 top-1/2 transform -translate-y-1/2 z-10  flex-col items-center space-y-4 bg-white p-2 rounded-lg shadow-lg"
     >
       <button
           @click="toggleLike"
