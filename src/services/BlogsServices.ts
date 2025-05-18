@@ -262,6 +262,7 @@ export const BlogsServices = {
                 .from('category')
                 .select('*');
 
+
             if (error) {
                 throw error;
             }
@@ -281,7 +282,7 @@ export const BlogsServices = {
         try {
             const { data, error } = await supabase
                 .from('blogs')
-                .update({ is_published: true, published_at: new Date() })
+                .update({ is_published: true, published_at: Date.now() })
                 .eq('id', id)
                 .select()
                 .single();
