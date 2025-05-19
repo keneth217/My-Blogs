@@ -119,7 +119,7 @@ router.beforeEach(async (to, from, next) => {
       next('/login')
     } else if (redirectIfAuthenticated && isAuthenticated) {
       // Redirect to profile if trying to access login/register while authenticated
-      next('/profile')
+      next('/dashboard')
     } else {
       // Proceed to the route
       next()
