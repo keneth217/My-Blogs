@@ -378,6 +378,8 @@ const fetchBlog = async () => {
     if (!blogId) return;
 
     const blog = await BlogsServices.getBlogById(blogId);
+
+    console.log(blog+ "blogs");
     if (!blog) {
       router.push('/404');
       return;
