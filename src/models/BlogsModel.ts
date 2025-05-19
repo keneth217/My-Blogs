@@ -44,6 +44,13 @@ export interface BlogLike {
     };
 }
 
+export interface Tags {
+    id: string;
+    name: string;
+    created_at: string;
+    description: string;
+}
+
 export interface BlogsModel {
     id: string;
     title: string;
@@ -71,6 +78,7 @@ export interface BlogsModel {
     };
     like_count: number;
     comment_count: number;
-
+    tag_id: string;
     category_id: string;
+    blog_tags: Tags[];
 }
