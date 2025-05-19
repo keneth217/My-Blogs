@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col">
+  <div class="min-h-screen bg-gray-50 top-20 flex flex-col">
     <!-- Hero Section -->
-    <main class="container mx-auto mt-24 px-4 flex-grow">
+    <main class="container mx-auto mt-24 px-4 flex-grow ">
       <div class="text-center mb-16">
         <h1 class="text-4xl font-light tracking-wide mb-4 text-gray-800">
           <span class="font-extralight">Exploring </span>
@@ -37,7 +37,7 @@
     </main>
 
     <!-- Blog Section -->
-    <section class="container mx-auto px-4 py-12 max-w-5xl">
+    <section class="container mx-auto px-4 py-12 max-w-5xl h-full">
       <h2 class="flex text-2xl font-light mb-2 text-gray-800 pb-2 justify-center items-center">
         Latest Insights
       </h2>
