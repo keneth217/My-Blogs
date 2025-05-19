@@ -282,7 +282,8 @@ export const BlogsServices = {
         try {
             const { data, error } = await supabase
                 .from('blogs')
-                .update({ is_published: true, published_at: Date.now() })
+                .update({ is_published: true, published_at: new Date().toISOString()
+                     })
                 .eq('id', id)
                 .select()
                 .single();
