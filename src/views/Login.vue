@@ -221,6 +221,15 @@ const loginWithProvider = async (provider: 'google' | 'github') => {
 
     // Successful social login
     console.log(`${provider} login successful:`, response);
+    $toast.success(
+        "Login successful",
+        {
+          duration: 2000,
+          position: 'top-right',
+          dismissible: true,
+          type: 'success',
+        }
+    )
 
 
     router.push('/dashboard');
