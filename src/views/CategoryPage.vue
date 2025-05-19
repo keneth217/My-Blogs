@@ -6,8 +6,8 @@
         {{ categoryName }}
       </h2>
 
-      <p class="flex text-xl font-light mb-8 text-gray-800 border-b border-gray-200 pb-2 justify-center items-center">
-        <span class="text-gray-500">Explore our {{ categoryName.toLowerCase() }} content.</span>
+      <p class="flex text-lg font-light mb-8 text-gray-800 border-b border-gray-200 pb-2 justify-center items-center">
+        <span class="text-gray-500">{{categoryDescription}}</span>
       </p>
 
       <!-- Category filter buttons -->
@@ -61,7 +61,7 @@
             </div>
             <div class="p-6">
             <span class="text-xs text-indigo-500 uppercase tracking-wider">
-              {{ getCategoryName(blog.category_id) }}
+             name: {{ getCategoryName(blog.category_id) }}
             </span>
               <h3 class="text-xl font-medium mt-2 mb-3 text-gray-800">{{ blog.title }}</h3>
               <p class="text-gray-600 text-sm line-clamp-3">{{ blog.excerpt }}</p>
@@ -106,6 +106,11 @@ const error = ref<Error | null>(null);
 const categoryName = computed(() => {
   const category = categories.value.find(cat => cat.id === currentCategoryId.value);
   return category?.name ?? "All Categories";
+});
+
+const categoryDescription = computed(() => {
+  const category = categories.value.find(cat => cat.id === currentCategoryId.value);
+  return category?.description ?? "Ex plore all Categories";
 });
 
 // Data fetching functions
