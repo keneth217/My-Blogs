@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-50 flex flex-col">
     <header class="backdrop-blur-sm bg-white/70 shadow-sm fixed w-full z-10">
       <div class="container mx-auto px-4 py-4">
-        <div class="flex justify-around items-start">
+        <div class="flex justify-between items-center">
           <!-- Logo -->
           <div class="font-light text-xl text-gray-700">
             <router-link to="/"
@@ -24,7 +24,6 @@
                   <span
                       v-if="$route.path === '/'"
                       class="absolute left-0 -bottom-2 w-full h-0.5 bg-indigo-500 transition-all duration-300"
-                      style="margin-bottom: 4px"
                   ></span>
                 </router-link>
               </li>
@@ -38,7 +37,6 @@
                   <span
                       v-if="isActiveCategory(category.name)"
                       class="absolute left-0 -bottom-2 w-full h-0.5 bg-indigo-500 transition-all duration-300"
-                      style="margin-bottom: 4px"
                   ></span>
                 </router-link>
               </li>
@@ -51,96 +49,116 @@
               class="md:hidden flex items-center p-2 rounded-md text-gray-600 hover:text-indigo-500 hover:bg-gray-100 focus:outline-none"
           >
             <span class="sr-only">Open main menu</span>
-            <!-- Menu icons remain the same -->
+            <svg
+                v-if="!isMenuOpen"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <svg
+                v-else
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
       </div>
 
       <!-- Mobile menu -->
-      <div v-if="isMenuOpen" class="md:hidden">
-        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/90 shadow-lg">
-          <router-link
-              to="/"
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-500 hover:bg-gray-50"
-              :class="{ 'text-indigo-500': $route.path === '/' }"
-              @click="isMenuOpen = false"
-          >
-          <span class="relative">
-            Home
-            <span
-                v-if="$route.path === '/'"
-                class="absolute left-0 -bottom-1 w-full h-0.5 bg-indigo-500"
-                style="margin-bottom: 3px"
-            ></span>
-          </span>
-          </router-link>
-          <router-link
-              v-for="category in categories"
-              :key="category.id"
-              :to="`/category/${category.name}`"
-              class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-500 hover:bg-gray-50"
-              :class="{ 'text-indigo-500': isActiveCategory(category.name) }"
-              @click="isMenuOpen = false"
-          >
-          <span class="relative">
-            {{ category.name }}
-            <span
-                v-if="isActiveCategory(category.name)"
-                class="absolute left-0 -bottom-1 w-full h-0.5 bg-indigo-500"
-                style="margin-bottom: 3px"
-            ></span>
-          </span>
-          </router-link>
+      <transition
+          enter-active-class="transition ease-out duration-200"
+          enter-from-class="opacity-0 -translate-y-2"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition ease-in duration-150"
+          leave-from-class="opacity-100 translate-y-0"
+          leave-to-class="opacity-0 -translate-y-2"
+      >
+        <div v-show="isMenuOpen" class="md:hidden bg-white/95 shadow-lg">
+          <div class="px-2 pt-2 pb-4 space-y-1 sm:px-3">
+            <router-link
+                to="/"
+                class="block px-3 py-2 rounded-md text-base font-medium"
+                :class="{
+                  'text-indigo-500 bg-indigo-50': $route.path === '/',
+                  'text-gray-700 hover:text-indigo-500 hover:bg-gray-50': $route.path !== '/'
+                }"
+                @click="isMenuOpen = false"
+            >
+              <span class="relative">
+                Home
+                <span
+                    v-if="$route.path === '/'"
+                    class="absolute left-0 -bottom-1 w-full h-0.5 bg-indigo-500"
+                ></span>
+              </span>
+            </router-link>
+
+            <router-link
+                v-for="category in categories"
+                :key="category.id"
+                :to="`/category/${category.name}`"
+                class="block px-3 py-2 rounded-md text-base font-medium"
+                :class="{
+                  'text-indigo-500 bg-indigo-50': isActiveCategory(category.name),
+                  'text-gray-700 hover:text-indigo-500 hover:bg-gray-50': !isActiveCategory(category.name)
+                }"
+                @click="isMenuOpen = false"
+            >
+              <span class="relative">
+                {{ category.name }}
+                <span
+                    v-if="isActiveCategory(category.name)"
+                    class="absolute left-0 -bottom-1 w-full h-0.5 bg-indigo-500"
+                ></span>
+              </span>
+            </router-link>
+          </div>
         </div>
-      </div>
+      </transition>
     </header>
 
-    <!-- Router view to display either Home or Category page -->
-    <router-view/>
+    <!-- Main content with padding to account for fixed header -->
+    <main class="pt-16 flex-1">
+      <router-view/>
+    </main>
 
-    <footer class="bg-gray-400 text-white py-8">
+    <footer class="bg-gray-800 text-white py-8 mt-auto">
       <div class="container mx-auto px-4">
-        <div class="flex flex-col md:flex-row justify-around items-center">
+        <div class="flex flex-col md:flex-row justify-between items-center">
           <div class="mb-4 md:mb-0">
             <span class="font-light tracking-wider">
               &copy; {{ new Date().getFullYear() }}
-  <span class="text-white font-medium">
-    <a href="https://www.kipyegonkeneth.co.ke/" target="_blank"
-       class="hover:text-indigo-500 transition-colors duration-300">
-      Keneth Kipyegon
-    </a>
-  </span>. All rights reserved.
-
-</span>
-
-
-
+              <a href="https://www.kipyegonkeneth.co.ke/" target="_blank"
+                 class="text-white font-medium hover:text-indigo-400 transition-colors duration-300">
+                Keneth Kipyegon
+              </a>. All rights reserved.
+            </span>
           </div>
 
           <div class="mb-4 md:mb-0">
-              <span class="text-gray-500 text-sm">
-
-
-
-                <a href="
-                 https://www.kipyegonkeneth.co.ke/"
-                   class="text-white hover:text-indigo-400 transition-colors duration-300"
-                   target="_blank">
-
-                    Portfolio.me
-                </a>
-                .
-              </span>
+            <a href="https://www.kipyegonkeneth.co.ke/"
+               class="text-gray-300 hover:text-indigo-400 transition-colors duration-300 text-sm"
+               target="_blank">
+              Portfolio.me
+            </a>
           </div>
+
           <div class="flex space-x-4">
-            <a href="#" class="hover:text-white transition-colors duration-300">
+            <a href="#" class="text-gray-300 hover:text-white transition-colors duration-300">
               <span class="sr-only">Twitter</span>
               <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                     d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path>
               </svg>
             </a>
-            <a href="#" class="hover:text-white transition-colors duration-300">
+            <a href="#" class="text-gray-300 hover:text-white transition-colors duration-300">
               <span class="sr-only">GitHub</span>
               <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill-rule="evenodd"
@@ -188,6 +206,11 @@ const fetchCategories = async () => {
   }
 };
 
+// Close menu when route changes
+const closeMenu = () => {
+  isMenuOpen.value = false;
+};
+
 // Lifecycle hooks
 onMounted(async () => {
   await fetchCategories();
@@ -195,7 +218,6 @@ onMounted(async () => {
 </script>
 
 <style>
-/* Additional global styles for the futuristic theme */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap');
 
 html {
@@ -224,5 +246,16 @@ html {
 
 .animate-bounce {
   animation: bounce 2s infinite;
+}
+
+/* Smooth transitions for route changes */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
