@@ -363,7 +363,8 @@ const addNewTag = async () => {
           .from('blog_tags')
           .insert({
             name: trimmedName,
-            user_id: user?.id || null
+            user_id: user?.id || null,
+            created_by: blogData.value.author.full_name,
           })
           .select()
           .single();
