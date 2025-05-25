@@ -7,4 +7,4 @@ const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-console.log(supabase)  // Should show your initialized clients
+//console.log(supabase)  // Should show your initialized clients

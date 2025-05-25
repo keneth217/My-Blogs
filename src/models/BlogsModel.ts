@@ -7,14 +7,11 @@ export interface BlogSubtitle {
     created_at: string;
 }
 
-export interface category {
-
+export interface Category {
     id: string;
     name: string;
     created_at: string;
     description: string;
-
-
 }
 
 export interface BlogComment {
@@ -30,7 +27,7 @@ export interface BlogComment {
         name: string;
         avatar_url: string;
     };
-    replies?: BlogComment[];
+    replies?: BlogComment[]; // Recursive structure for nested comments
 }
 
 export interface BlogLike {
@@ -44,7 +41,7 @@ export interface BlogLike {
     };
 }
 
-export interface Tags {
+export interface Tag {
     id: string;
     name: string;
     created_at: string;
@@ -56,29 +53,34 @@ export interface BlogsModel {
     title: string;
     main_content: string;
     cover_image: string;
-    author_id: string;
-    is_published: boolean;
-    created_at: string;
-    updated_at: string;
+    cover_image_credit: string;
+    excerpt: string;
     subtitle: string;
     slug: string;
-    excerpt: string;
     reading_time_minutes: number;
-    status: string;
-    published_at: string | null;
-    scheduled_at: string | null;
-    cover_image_credit: string;
-    blog_subtitles: BlogSubtitle[];
-    comments: BlogComment[];
-    likes: BlogLike[];
+
+    author_id: string;
     author: {
         id: string;
         full_name: string;
         avatar_url: string;
     };
+
+    blog_subtitles: BlogSubtitle[];
+    comments: BlogComment[];
+    likes: BlogLike[];
+    blog_tags: Tag[];
+
+    tag_id: string; // Optional: consider allowing multiple tag IDs
+    category_id: string;
+
+    is_published: boolean;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    published_at: string | null;
+    scheduled_at: string | null;
+
     like_count: number;
     comment_count: number;
-    tag_id: string;
-    category_id: string;
-    blog_tags: Tags[];
 }
