@@ -29,7 +29,6 @@
         <div class="p-2 rounded-full group-hover:bg-gray-100 transition-colors">
           <svg
               class="w-6 h-6"
-              fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
               :stroke-width="isLiked ? 1.5 : 2"
@@ -42,6 +41,7 @@
             />
           </svg>
         </div>
+
         <span class="text-sm font-medium mt-1">{{ blog.like_count || 0 }}</span>
       </button>
 
@@ -110,10 +110,6 @@
     <article class="prose max-w-none mb-12">
       <div v-html="blog.main_content"></div>
 
-      <div v-for="sub in blog.subtitles || []" :key="sub.id" class="mt-12">
-        <h2 class="text-2xl font-bold mb-4">{{ sub.subtitle }}</h2>
-        <div v-html="sub.content"></div>
-      </div>
     </article>
 
     <section class="border-t pt-8">
@@ -317,15 +313,15 @@ const nestedComments = computed(() => {
   })
 
   blog.value.comments.forEach(comment => {
-    if (comment.parent_id) {
-      const parentComment = commentsMap.get(comment.parent_id)
+    if (comment.parent_comment_id) {
+      const parentComment = commentsMap.get(comment.parent_comment_id)
       if (parentComment) {
         parentComment.replies.push(comment)
       }
     }
   })
 
-  return Array.from(commentsMap.values()).filter(comment => !comment.parent_id)
+  return Array.from(commentsMap.values()).filter(comment => !comment.parent_comment_id)
 })
 
 const formatDate = (dateString: string | null) => {
