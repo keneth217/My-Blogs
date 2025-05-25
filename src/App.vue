@@ -177,11 +177,12 @@
 import {BlogsServices} from "@/services/BlogsServices.ts";
 import {onMounted, ref} from "vue";
 import {useRoute} from "vue-router";
-import type {category} from "@/models/BlogsModel.ts";
+import type {Category} from "@/models/BlogsModel.ts";
+
 
 // Reactive state
 const route = useRoute();
-const categories = ref<category[]>([]);
+const categories = ref<Category[]>([]);
 const isLoading = ref(false);
 const error = ref<Error | null>(null);
 const isMenuOpen = ref(false);
