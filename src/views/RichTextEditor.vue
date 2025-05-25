@@ -309,6 +309,18 @@ const setHeading = () => {
   }
 }
 
+const setFontFamily = (font: string) => {
+
+
+
+}
+
+const setFontSize = (fontSize: string) => {
+
+
+
+}
+
 
 const setLink = () => {
   const previousUrl = editor.value?.getAttributes('link').href
