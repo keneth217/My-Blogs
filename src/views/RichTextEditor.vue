@@ -301,12 +301,14 @@ const editor = useEditor({
 
 const setHeading = () => {
   const level = parseInt(headingLevel.value)
+
   if (level === 0) {
     editor.value?.chain().focus().setParagraph().run()
-  } else {
-    editor.value?.chain().focus().toggleHeading({ level }).run()
+  } else if ([1, 2, 3, 4, 5, 6].includes(level)) {
+    editor.value?.chain().focus().toggleHeading({ level: level as 1 | 2 | 3 | 4 | 5 | 6 }).run()
   }
 }
+
 
 const setLink = () => {
   const previousUrl = editor.value?.getAttributes('link').href
