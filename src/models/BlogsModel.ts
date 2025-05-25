@@ -1,11 +1,4 @@
-export interface BlogSubtitle {
-    id: string;
-    blog_id: string;
-    subtitle: string;
-    content: string;
-    order_index: number;
-    created_at: string;
-}
+
 
 export interface Category {
     id: string;
@@ -66,12 +59,11 @@ export interface BlogsModel {
         avatar_url: string;
     };
 
-    blog_subtitles: BlogSubtitle[];
     comments: BlogComment[];
     likes: BlogLike[];
     blog_tags: Tag[];
 
-    tag_id: string; // Optional: consider allowing multiple tag IDs
+    tag_id: string;
     category_id: string;
 
     is_published: boolean;
