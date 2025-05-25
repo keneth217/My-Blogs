@@ -128,26 +128,38 @@ export const BlogsServices = {
 
     async getBlogBySlug(slug: string): Promise<BlogsModel> {
         try {
-            const { data, error } = await supabase
+            // Get basic blog info first
+            const { data: blog, error: blogError } = await supabase
                 .from('blogs')
                 .select(`
-                    *,
-                    author:author_id(id, full_name, avatar_url),
-                    comments:comments(*, user:user_id(*)),
-                    likes:likes(*, user:user_id(*)),
-                    blog_tags:blog_tags(*, tag:tag_id(*)),
-                    category:category_id(*)
-                `)
+                *,
+                author:author_id(id, full_name, avatar_url),
+                category:category_id(*)
+            `)
                 .eq('slug', slug)
                 .single();
 
-            if (error) throw error;
-            if (!data) throw new Error('Blog not found');
+            if (blogError) throw blogError;
+            if (!blog) throw new Error('Blog not found');
+
+            // Then get related data in parallel
+            const [
+                { data: comments },
+                { data: likes },
+                { data: tagRelations }
+            ] = await Promise.all([
+                supabase.from('comments').select('*, user:user_id(*)').eq('blog_id', blog.id),
+                supabase.from('likes').select('*, user:user_id(*)').eq('blog_id', blog.id),
+                supabase.from('blog_tag_relations').select('*, blog_tags:tag_id(*)').eq('blog_id', blog.id)
+            ]);
 
             return {
-                ...data,
-                like_count: data.likes?.length || 0,
-                comment_count: data.comments?.length || 0
+                ...blog,
+                comments: comments || [],
+                likes: likes || [],
+                blog_tags: tagRelations?.map(tr => tr.blog_tags) || [],
+                like_count: likes?.length || 0,
+                comment_count: comments?.length || 0
             } as BlogsModel;
         } catch (error) {
             console.error(`Error fetching blog with slug ${slug}:`, error);

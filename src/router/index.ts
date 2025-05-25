@@ -5,10 +5,10 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/home',
+      path: '/',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, title: 'Rooted in Curiosity' }
     },
     {
       path: '/about',
@@ -98,7 +98,7 @@ const router = createRouter({
     // Redirect to home by default
     {
       path: '/',
-      redirect: '/home'
+      redirect: '/'
     }
   ]
 })

@@ -37,8 +37,8 @@ export interface BlogLike {
 export interface Tag {
     id: string;
     name: string;
-    created_at: string;
-    description: string;
+    user_id: string;
+    blog_id: string;
 }
 
 export interface BlogsModel {

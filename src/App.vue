@@ -1,9 +1,9 @@
 <template>
-  <Analytics />
+  <Analytics/>
   <div class="min-h-screen bg-gray-50 flex flex-col">
     <header class="backdrop-blur-sm bg-white/70 shadow-sm fixed w-full z-10">
       <div class="container mx-auto px-4 py-4">
-        <div class="flex justify-between items-center">
+        <div class="flex justify-around items-center">
           <!-- Logo -->
           <div class="font-light text-xl text-gray-700">
             <router-link to="/"
@@ -57,7 +57,7 @@
                 viewBox="0 0 24 24"
                 stroke="currentColor"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
             <svg
                 v-else
@@ -66,7 +66,7 @@
                 viewBox="0 0 24 24"
                 stroke="currentColor"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
           </button>
         </div>
@@ -179,7 +179,7 @@ import {BlogsServices} from "@/services/BlogsServices.ts";
 import {onMounted, ref} from "vue";
 import {useRoute} from "vue-router";
 import type {Category} from "@/models/BlogsModel.ts";
-import { Analytics } from '@vercel/analytics/vue';
+import {Analytics} from '@vercel/analytics/vue';
 
 
 // Reactive state
