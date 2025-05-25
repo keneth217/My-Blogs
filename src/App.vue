@@ -1,4 +1,5 @@
 <template>
+  <Analytics />
   <div class="min-h-screen bg-gray-50 flex flex-col">
     <header class="backdrop-blur-sm bg-white/70 shadow-sm fixed w-full z-10">
       <div class="container mx-auto px-4 py-4">
@@ -178,6 +179,7 @@ import {BlogsServices} from "@/services/BlogsServices.ts";
 import {onMounted, ref} from "vue";
 import {useRoute} from "vue-router";
 import type {Category} from "@/models/BlogsModel.ts";
+import { Analytics } from '@vercel/analytics/vue';
 
 
 // Reactive state
