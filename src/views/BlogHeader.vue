@@ -34,14 +34,26 @@
 </template>
 
 <script setup lang="ts">
-import { formatDate } from '@/utils/date'
-import HeartIcon from './icons/HeartIcon.vue'
-import CommentIcon from './icons/CommentIcon.vue'
+
+
+import type {BlogsModel} from "@/models/BlogsModel.ts";
+import HeartIcon from "@/views/icons/HeartIcon.vue";
+import CommentIcon from "@/views/icons/CommentIcon.vue";
 
 defineProps<{
   blog: BlogsModel
   isLiked: boolean
 }>()
+
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return 'Unknown date';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
 
 defineEmits<{
   (e: 'toggle-like'): void
