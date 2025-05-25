@@ -71,9 +71,8 @@
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
           >
-            <option value="false">false</option>
-            <option value="true">true</option>
-
+            <option value="false">Draft</option>
+            <option value="true">Published</option>
           </select>
         </div>
         <div>
@@ -88,15 +87,6 @@
               {{ category.name }}
             </option>
           </select>
-        </div>
-        <div v-if="blogData.status === 'scheduled'" class="md:col-span-2">
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="scheduled_at">Schedule Date/Time</label>
-          <input
-              v-model="blogData.scheduled_at"
-              id="scheduled_at"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              type="datetime-local"
-          />
         </div>
       </div>
 
@@ -165,53 +155,6 @@
         </div>
       </div>
 
-      <div class="mb-8">
-        <h3 class="text-xl font-semibold mb-4">Subtitle Sections</h3>
-        <div
-            v-for="(subtitle, index) in blogData.blog_subtitles"
-            :key="index"
-            class="mb-6 p-4 border rounded-lg bg-gray-50"
-        >
-          <div class="flex justify-between items-center mb-3">
-            <h4 class="font-medium">Section {{ index + 1 }}</h4>
-            <button
-                @click="removeSubtitle(index)"
-                type="button"
-                class="text-red-600 hover:text-red-800 text-sm"
-                :disabled="blogData.blog_subtitles.length <= 1"
-            >
-              Remove
-            </button>
-          </div>
-          <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" :for="`subtitle-${index}`">Subtitle*</label>
-            <input
-                v-model="subtitle.subtitle"
-                :id="`subtitle-${index}`"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                type="text"
-                required
-            />
-          </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" :for="`subcontent-${index}`">Content*</label>
-            <textarea
-                v-model="subtitle.content"
-                :id="`subcontent-${index}`"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-32"
-                required
-            ></textarea>
-          </div>
-        </div>
-        <button
-            @click="addSubtitle"
-            type="button"
-            class="mt-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-md text-sm"
-        >
-          + Add Section
-        </button>
-      </div>
-
       <div class="flex justify-between">
         <button
             @click="submitBlog"
@@ -242,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, watch} from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/services/UseSupabase';
 import { BlogsServices } from "@/services/BlogsServices";
@@ -259,17 +202,10 @@ interface Tag {
   name: string;
 }
 
-interface Subtitle {
-  id?: string;
-  subtitle: string;
-  content: string;
-  order_index: number;
-}
-
 const route = useRoute();
 const router = useRouter();
 
-const blogData = ref<BlogsModel>({
+const blogData = ref<Partial<BlogsModel>>({
   id: '',
   title: '',
   slug: '',
@@ -277,14 +213,9 @@ const blogData = ref<BlogsModel>({
   main_content: '',
   cover_image: '',
   cover_image_credit: '',
-  status: 'draft',
   excerpt: '',
-  author_id: '',
   is_published: false,
-  published_at: null,
-  scheduled_at: null,
   reading_time_minutes: 0,
-  blog_subtitles: [],
 });
 
 const categories = ref<Category[]>([]);
@@ -296,24 +227,6 @@ const isSubmitting = ref(false);
 const handleImageError = (e: Event) => {
   const img = e.target as HTMLImageElement;
   img.src = '/cover_image.jpeg';
-};
-
-const addSubtitle = () => {
-  blogData.value.blog_subtitles.push({
-    subtitle: '',
-    content: '',
-    order_index: blogData.value.blog_subtitles.length
-  });
-};
-
-const removeSubtitle = (index: number) => {
-  if (blogData.value.blog_subtitles.length > 1) {
-    blogData.value.blog_subtitles.splice(index, 1);
-    // Update order indices
-    blogData.value.blog_subtitles.forEach((sub, idx) => {
-      sub.order_index = idx;
-    });
-  }
 };
 
 const calculateReadingTime = (text: string) => {
@@ -378,8 +291,6 @@ const fetchBlog = async () => {
     if (!blogId) return;
 
     const blog = await BlogsServices.getBlogById(blogId);
-
-    console.log(blog+ "blogs");
     if (!blog) {
       router.push('/404');
       return;
@@ -390,18 +301,6 @@ const fetchBlog = async () => {
       category_id: blog.category_id || ''
     };
 
-    // Fetch subtitles
-    const { data: subtitles } = await supabase
-        .from('blog_subtitles')
-        .select()
-        .eq('blog_id', blogId)
-        .order('order_index');
-
-    if (subtitles) {
-      blogData.value.blog_subtitles = subtitles;
-    }
-
-    // Fetch tags
     const { data: tagRelations } = await supabase
         .from('blog_tag_relations')
         .select('tag_id')
@@ -443,10 +342,7 @@ const fetchTags = async () => {
 };
 
 const validateForm = () => {
-  if (!blogData.value.title || !blogData.value.slug || !blogData.value.main_content || !blogData.value.excerpt) {
-    return false;
-  }
-  return blogData.value.blog_subtitles.every(sub => sub.subtitle && sub.content);
+  return blogData.value.title && blogData.value.slug && blogData.value.main_content && blogData.value.excerpt;
 };
 
 const submitBlog = async () => {
@@ -454,69 +350,22 @@ const submitBlog = async () => {
   isSubmitting.value = true;
 
   try {
-    // Calculate reading time
-    let allContent = blogData.value.main_content;
-    blogData.value.blog_subtitles.forEach(sub => {
-      allContent += ` ${sub.subtitle} ${sub.content}`;
-    });
-    blogData.value.reading_time_minutes = calculateReadingTime(allContent);
-
-    // Set publication dates
-    if (blogData.value.status === 'published') {
-      blogData.value.published_at = new Date().toISOString();
-      blogData.value.is_published = true;
-    } else if (blogData.value.status === 'scheduled') {
-      blogData.value.is_published = false;
-    } else {
-      blogData.value.is_published = false;
-      blogData.value.published_at = null;
-      blogData.value.scheduled_at = null;
-    }
+    blogData.value.reading_time_minutes = calculateReadingTime(blogData.value.main_content || '');
 
     const currentDate = new Date().toISOString();
     blogData.value.updated_at = currentDate;
 
-    // Update blog
     const { data: updatedBlog, error: blogError } = await supabase
         .from('blogs')
-        .update({
-          title: blogData.value.title,
-          slug: blogData.value.slug,
-          main_content: blogData.value.main_content,
-          cover_image: blogData.value.cover_image,
-          cover_image_credit: blogData.value.cover_image_credit,
-          status: blogData.value.status,
-          category_id: blogData.value.category_id,
-          excerpt: blogData.value.excerpt,
-          published_at: blogData.value.published_at,
-          scheduled_at: blogData.value.scheduled_at,
-          reading_time_minutes: blogData.value.reading_time_minutes,
-          updated_at: blogData.value.updated_at
+        .upsert({
+          ...blogData.value,
+          published_at: blogData.value.is_published ? new Date().toISOString() : null
         })
-        .eq('id', blogData.value.id)
         .select()
         .single();
 
     if (blogError) throw blogError;
 
-    // Update subtitles
-    await supabase
-        .from('blog_subtitles')
-        .delete()
-        .eq('blog_id', blogData.value.id);
-
-    const subtitlesToInsert = blogData.value.blog_subtitles.map((sub, index) => ({
-      blog_id: blogData.value.id,
-      subtitle: sub.subtitle,
-      content: sub.content,
-      order_index: index
-    }));
-
-    await supabase
-        .from('blog_subtitles')
-        .insert(subtitlesToInsert);
-
-    // Update tags
     await supabase
         .from('blog_tag_relations')
         .delete()
@@ -543,7 +392,7 @@ const submitBlog = async () => {
 
 const resetForm = () => {
   if (blogData.value.id) {
-    fetchBlog(); // Reset to original values
+    fetchBlog();
   } else {
     blogData.value = {
       id: '',
@@ -553,29 +402,19 @@ const resetForm = () => {
       main_content: '',
       cover_image: '',
       cover_image_credit: '',
-      status: 'draft',
       excerpt: '',
-      author_id: blogData.value.author_id,
       is_published: false,
-      published_at: null,
-      scheduled_at: null,
       reading_time_minutes: 0,
-      blog_subtitles: []
     };
     selectedTags.value = [];
-    addSubtitle();
   }
 };
 
 onMounted(async () => {
   await fetchCategories();
   await fetchTags();
-
-  const blogId = route.params.id;
-  if (blogId) {
+  if (route.params.id) {
     await fetchBlog();
-  } else {
-    addSubtitle();
   }
 });
 
@@ -586,6 +425,3 @@ watch(() => blogData.value.title, (newTitle) => {
 });
 </script>
 
-<style scoped>
-/* Add any custom styles here */
-</style>
