@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { supabase } from "@/services/UseSupabase.ts";
+import {ref, onMounted} from 'vue'
+import {supabase} from "@/services/UseSupabase.ts";
 
 interface DashboardStats {
   totalBlogs: number
@@ -9,6 +9,15 @@ interface DashboardStats {
   totalUsers: number
   activeUsers: number
 }
+
+interface User {
+  uuid: string
+  full_name: string
+  email: string
+  username: string
+}
+
+const users = ref<User[]>([])
 
 const stats = ref<DashboardStats>({
   totalBlogs: 0,
@@ -27,24 +36,24 @@ const fetchStats = async () => {
     error.value = null
 
     // Get total blogs count
-    const { count: totalBlogs, error: blogsError } = await supabase
+    const {count: totalBlogs, error: blogsError} = await supabase
         .from('blogs')
-        .select('*', { count: 'exact', head: true })
+        .select('*', {count: 'exact', head: true})
 
     if (blogsError) throw blogsError
 
     // Get published blogs count
-    const { count: publishedBlogs, error: publishedError } = await supabase
+    const {count: publishedBlogs, error: publishedError} = await supabase
         .from('blogs')
-        .select('*', { count: 'exact', head: true })
+        .select('*', {count: 'exact', head: true})
         .eq('is_published', 'true')
 
     if (publishedError) throw publishedError
 
     // Get total users count
-    const { count: totalUsers, error: usersError } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
+    const {count: totalUsers, error: usersError} = await supabase
+        .from('profiles')
+        .select('*', {count: 'exact', head: true})
 
     if (usersError) throw usersError
 
@@ -52,10 +61,10 @@ const fetchStats = async () => {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    const { count: activeUsers, error: activeUsersError } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .gte('last_login', thirtyDaysAgo.toISOString())
+    const {count: activeUsers, error: activeUsersError} = await supabase
+        .from('profiles')
+        .select('*', {count: 'exact', head: true})
+
 
     if (activeUsersError) throw activeUsersError
 
@@ -76,8 +85,25 @@ const fetchStats = async () => {
   }
 }
 
+const fetchUsers = async () => {
+  try {
+    const {data, error: usersError} = await supabase
+        .from('profiles')
+        .select('*')
+        .limit(10)
+
+    if (usersError) throw usersError
+
+    users.value = data || []
+    console.log('Users profiles:', data)
+  } catch (err) {
+    console.error('Error fetching users:', err)
+  }
+}
+
 onMounted(() => {
   fetchStats()
+  fetchUsers() // Fixed: Added parentheses to call the function
 })
 </script>
 
@@ -107,9 +133,12 @@ onMounted(() => {
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
           <div class="flex items-start">
             <div class="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
               </svg>
             </div>
             <div class="ml-4">
@@ -123,9 +152,12 @@ onMounted(() => {
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
           <div class="flex items-start">
             <div class="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
               </svg>
             </div>
             <div class="ml-4">
@@ -142,9 +174,12 @@ onMounted(() => {
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
           <div class="flex items-start">
             <div class="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg text-amber-600 dark:text-amber-400">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
             </div>
             <div class="ml-4">
@@ -161,11 +196,13 @@ onMounted(() => {
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
           <div class="flex items-start">
             <div class="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 3.13a4 4 0 0 1 0 7.75" />
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
             </div>
             <div class="ml-4">
@@ -179,7 +216,8 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div
+          class="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
         <p class="text-sm text-gray-500 dark:text-gray-400">
           Last updated: {{ new Date().toLocaleTimeString() }}
         </p>
@@ -187,14 +225,60 @@ onMounted(() => {
             @click="fetchStats"
             class="mt-2 sm:mt-0 px-4 py-2 inline-flex items-center text-sm font-medium rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M23 4v6h-6" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 20v-6h6" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M23 4v6h-6"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 20v-6h6"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
           </svg>
           Refresh
         </button>
+      </div>
+
+      <div>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mt-8">Users</h2>
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 mt-4">
+          <thead class="bg-gray-50 dark:bg-gray-800">
+          <tr>
+            <th scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Name
+            </th>
+            <th scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Email
+            </th>
+            <th scope="col"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+             username
+            </th>
+          </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <!-- Replace with actual user data -->
+          <tr v-for="user in users" :key="user.uuid">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{
+                user.full_name
+              }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+             {{user.username}}
+            </td>
+          </tr>
+          </tbody>
+        </table>
+        <div class="mt-4">
+          <button
+              @click="fetchUsers"
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Load More Users
+          </button>
+        </div>
       </div>
     </div>
   </div>
