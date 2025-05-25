@@ -265,15 +265,17 @@ const cancelEditing = () => {
 const saveProfile = async () => {
   saving.value = true;
   try {
-    const {data, error} = await AuthService.updateUser({
+    const response = await AuthService.updateUser({
       data: {
         full_name: editForm.value.fullName
       }
     });
 
-    if (error) throw error;
+    if (response.error) {
+      throw response.error;
+    }
 
-    user.value = data?.user || null;
+    user.value = response?.user || null;
     editing.value = false;
   } catch (error) {
     console.error('Error updating profile:', error);
@@ -337,7 +339,7 @@ const requestEmailVerification = async () => {
   if (user.value?.email_confirmed_at) return;
 
   try {
-    await AuthService.resendVerificationEmail();
+    AuthService.resendVerificationEmail();
     alert('Verification email sent!');
   } catch (error) {
     console.error('Error sending verification email:', error);
