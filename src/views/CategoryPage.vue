@@ -92,11 +92,11 @@
 import {BlogsServices} from "@/services/BlogsServices.ts";
 import {onMounted, ref, computed, watch} from "vue";
 import {useRoute} from "vue-router";
-import type {BlogsModel, category,} from "@/models/BlogsModel.ts";
+import type {BlogsModel, Category} from "@/models/BlogsModel.ts";
 
 const debug = ref(true);
 const route = useRoute();
-const categories = ref<category[]>([]);
+const categories = ref<Category[]>([]);
 const blogs = ref<BlogsModel[]>([]);
 const currentCategoryId = ref<string | null>(null);
 const isLoading = ref(false);
