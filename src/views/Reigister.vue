@@ -206,7 +206,7 @@ const handleRegister = async () => {
     const response = await AuthService.register(
         registerForm.email,
         registerForm.password,
-        { full_name: registerForm.fullName }
+        { fullName: registerForm.fullName }
     );
 
     if (response.error) {
