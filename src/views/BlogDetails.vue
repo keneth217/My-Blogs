@@ -38,10 +38,8 @@
       </button>
     </div>
 
-    <!-- Fixed like/comment counts on the side -->
-    <div
-        class="fixed left-32 top-1/2 transform -translate-y-1/2 z-10 flex flex-col items-center space-y-4 bg-white p-2 rounded-lg shadow-lg"
-    >
+    <!-- Like/comment sidebar -->
+    <div class="fixed left-32 top-1/2 transform -translate-y-1/2 z-10 flex flex-col items-center space-y-4 bg-white p-2 rounded-lg shadow-lg">
       <button
           @click="toggleLike"
           class="flex flex-col items-center group"
@@ -50,7 +48,6 @@
         <div class="p-2 rounded-full group-hover:bg-gray-100 transition-colors">
           <svg
               class="w-6 h-6"
-              fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
               :stroke-width="isLiked ? 1.5 : 2"
@@ -86,7 +83,7 @@
       </div>
     </div>
 
-    <!-- Blog Content -->
+    <!-- Blog header -->
     <header class="mb-12">
       <img
           :src="blog.cover_image || '/cover_image.jpeg'"
@@ -128,19 +125,18 @@
       </div>
     </div>
 
+    <!-- Blog content -->
     <article class="prose max-w-none mb-12">
       <div v-html="blog.main_content"></div>
 
-      <div v-for="sub in blog.subtitles || []" :key="sub.id" class="mt-12">
-        <h2 class="text-2xl font-bold mb-4">{{ sub.subtitle }}</h2>
-        <div v-html="sub.content"></div>
-      </div>
+
     </article>
 
+    <!-- Comments section -->
     <section class="border-t pt-8">
       <h3 class="text-xl font-bold mb-6">Comments ({{ blog.comment_count || 0 }})</h3>
 
-      <!-- Comment form (shown to all users) -->
+      <!-- Comment form -->
       <div class="mb-8">
         <textarea
             v-model="newComment"
@@ -157,10 +153,12 @@
         </button>
       </div>
 
+      <!-- Comments list -->
       <div v-for="comment in nestedComments" :key="comment.id" class="mb-6">
         <div class="flex items-start space-x-3">
           <img
               :src="comment.user?.avatar_url || '/person.jpg'"
+              :alt="comment.user?.name || 'Commenter'"
               class="w-10 h-10 rounded-full mt-1"
           >
           <div class="flex-1">
@@ -175,11 +173,13 @@
               Reply
             </button>
 
+            <!-- Replies -->
             <div v-if="comment.replies?.length" class="mt-4 pl-6 border-l-2 border-gray-100">
               <div v-for="reply in comment.replies" :key="reply.id" class="mb-4">
                 <div class="flex items-start space-x-3">
                   <img
                       :src="reply.user?.avatar_url || '/person.jpg'"
+                      :alt="reply.user?.name || 'Commenter'"
                       class="w-8 h-8 rounded-full mt-1"
                   >
                   <div class="flex-1">
@@ -203,17 +203,17 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
-import {BlogsServices} from '@/services/BlogsServices'
-import {AuthService} from '@/services/AuthService'
-import type {BlogsModel, BlogComment} from "@/models/BlogsModel"
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { BlogsServices } from '@/services/BlogsServices'
+import { AuthService } from '@/services/AuthService'
+import type { BlogsModel, BlogComment, BlogLike } from "@/models/BlogsModel"
 
 const route = useRoute()
 const router = useRouter()
 
 const blog = ref<BlogsModel | null>(null)
-const user = ref<any>(null)
+const user = ref<{ id: string } | null>(null)
 const newComment = ref('')
 const isLiked = ref(false)
 const loading = ref(true)
@@ -227,7 +227,6 @@ const fetchBlog = async () => {
   try {
     loading.value = true
     const response = await BlogsServices.getBlogBySlug(route.params.slug as string)
-    console.log(response)
 
     if (!response) {
       await router.push('/404')
@@ -247,8 +246,8 @@ const fetchBlog = async () => {
 const publishBlog = async () => {
   if (!blog.value) return
   try {
-    await BlogsServices.publishBlog(blog.value.id)
-    blog.value.is_published = true
+    const updatedBlog = await BlogsServices.publishBlog(blog.value.id)
+    blog.value = { ...blog.value, ...updatedBlog }
   } catch (error) {
     console.error('Error publishing blog:', error)
   }
@@ -257,8 +256,8 @@ const publishBlog = async () => {
 const unPublishBlog = async () => {
   if (!blog.value) return
   try {
-    await BlogsServices.unpublishBlog(blog.value.id)
-    blog.value.is_published = false
+    const updatedBlog = await BlogsServices.unpublishBlog(blog.value.id)
+    blog.value = { ...blog.value, ...updatedBlog }
   } catch (error) {
     console.error('Error unpublishing blog:', error)
   }
@@ -267,13 +266,13 @@ const unPublishBlog = async () => {
 const checkUserLike = async () => {
   try {
     const session = await AuthService.getSession()
-    if (session.session?.user) {
-      user.value = session.session.user
-      const response = await BlogsServices.checkUserLike({
-        blog_id: blog.value?.id || '',
+    if (session.session?.user && blog.value?.id) {
+      user.value = { id: session.session.user.id }
+      const like = await BlogsServices.checkUserLike({
+        blog_id: blog.value.id,
         user_id: session.session.user.id
       })
-      isLiked.value = !!response
+      isLiked.value = !!like
     }
   } catch (error) {
     console.error('Error checking like:', error)
@@ -283,23 +282,20 @@ const checkUserLike = async () => {
 const toggleLike = async () => {
   try {
     const session = await AuthService.getSession()
-    if (!session.session?.user) {
-      // Optionally redirect to login or show a message
-      return
-    }
+    if (!session.session?.user || !blog.value) return
 
     if (isLiked.value) {
       await BlogsServices.unlikeBlog({
-        blog_id: blog.value?.id || '',
+        blog_id: blog.value.id,
         user_id: session.session.user.id
       })
-      if (blog.value) blog.value.like_count = Math.max(0, (blog.value.like_count || 0) - 1)
+      blog.value.like_count = Math.max(0, (blog.value.like_count || 0) - 1)
     } else {
       await BlogsServices.likeBlog({
-        blog_id: blog.value?.id || '',
+        blog_id: blog.value.id,
         user_id: session.session.user.id
       })
-      if (blog.value) blog.value.like_count = (blog.value.like_count || 0) + 1
+      blog.value.like_count = (blog.value.like_count || 0) + 1
     }
     isLiked.value = !isLiked.value
   } catch (error) {
@@ -312,10 +308,7 @@ const addComment = async () => {
 
   try {
     const session = await AuthService.getSession()
-    if (!session.session?.user) {
-      // Optionally redirect to login or show a message
-      return
-    }
+    if (!session.session?.user) return
 
     const response = await BlogsServices.addComment({
       blog_id: blog.value.id,
@@ -323,7 +316,12 @@ const addComment = async () => {
       content: newComment.value
     })
 
-    blog.value.comments = [...blog.value.comments || [], response]
+    if (blog.value.comments) {
+      blog.value.comments.push(response)
+    } else {
+      blog.value.comments = [response]
+    }
+
     blog.value.comment_count = (blog.value.comment_count || 0) + 1
     newComment.value = ''
   } catch (error) {
@@ -340,19 +338,19 @@ const nestedComments = computed(() => {
 
   const commentsMap = new Map<string, BlogComment & { replies: BlogComment[] }>()
   blog.value.comments.forEach(comment => {
-    commentsMap.set(comment.id, {...comment, replies: []})
+    commentsMap.set(comment.id, { ...comment, replies: [] })
   })
 
   blog.value.comments.forEach(comment => {
-    if (comment.parent_id) {
-      const parentComment = commentsMap.get(comment.parent_id)
+    if (comment.parent_comment_id) {
+      const parentComment = commentsMap.get(comment.parent_comment_id)
       if (parentComment) {
         parentComment.replies.push(comment)
       }
     }
   })
 
-  return Array.from(commentsMap.values()).filter(comment => !comment.parent_id)
+  return Array.from(commentsMap.values()).filter(comment => !comment.parent_comment_id)
 })
 
 const formatDate = (dateString: string | null) => {
@@ -384,5 +382,5 @@ onMounted(fetchBlog)
 </script>
 
 <style scoped>
-/* Add any custom styles here */
+
 </style>
