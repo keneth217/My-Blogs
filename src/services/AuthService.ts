@@ -1,12 +1,37 @@
 import { supabase } from "@/services/UseSupabase.ts";
-import type { AuthError, User, Session } from "@supabase/supabase-js";
+import {AuthError, type Session, type User} from "@supabase/supabase-js";
+
 
 type Provider = 'github' | 'google' | 'facebook' | 'twitter' | 'discord' | 'azure' | 'gitlab' | 'bitbucket' | 'apple';
+
+interface AppAuthError {
+    message: string;
+    name: string;
+    code?: string;
+    status?: number;
+    __isAuthError?: boolean;
+}
 
 interface AuthResponse {
     user: User | null;
     session: Session | null;
-    error: AuthError | null;
+    error: AppAuthError | null;
+}
+
+// Type guard for AuthError
+function isAuthError(error: unknown): error is AuthError {
+    return error instanceof Error && 'name' in error && 'message' in error;
+}
+
+// Helper function to convert AuthError to AppAuthError
+function convertAuthError(error: AuthError): AppAuthError {
+    return {
+        message: error.message,
+        name: error.name,
+        code: 'code' in error ? error.code : undefined,
+        status: 'status' in error ? error.status : undefined,
+        __isAuthError: true
+    };
 }
 
 export const AuthService = {
@@ -30,10 +55,7 @@ export const AuthService = {
                 return {
                     user: null,
                     session: null,
-                    error: {
-                        message: error.message,
-                        name: error.name || 'AuthError'
-                    }
+                    error: convertAuthError(error)
                 };
             }
 
@@ -55,12 +77,12 @@ export const AuthService = {
         }
     },
 
-    async logout(): Promise<{ error: AuthError | null }> {
+    async logout(): Promise<{ error: AppAuthError | null }> {
         try {
             const { error } = await supabase.auth.signOut();
             if (error) {
                 console.error('Logout error:', error);
-                return { error };
+                return { error: convertAuthError(error) };
             }
             return { error: null };
         } catch (error) {
@@ -122,7 +144,7 @@ export const AuthService = {
             return {
                 user: null,
                 session: null,
-                error: {
+                error: isAuthError(error) ? convertAuthError(error) : {
                     message: error instanceof Error ? error.message : 'Registration failed',
                     name: 'AuthError'
                 }
@@ -130,7 +152,7 @@ export const AuthService = {
         }
     },
 
-    async resetPassword(email: string): Promise<{ error: AuthError | null }> {
+    async resetPassword(email: string): Promise<{ error: AppAuthError | null }> {
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
                 redirectTo: `${window.location.origin}/auth/reset-password`
@@ -138,13 +160,13 @@ export const AuthService = {
 
             if (error) {
                 console.error('Password reset error:', error);
-                return { error };
+                return { error: convertAuthError(error) };
             }
             return { error: null };
         } catch (error) {
             console.error('Unexpected password reset error:', error);
             return {
-                error: {
+                error: isAuthError(error) ? convertAuthError(error) : {
                     message: error instanceof Error ? error.message : 'Password reset failed',
                     name: 'AuthError'
                 }
@@ -162,12 +184,12 @@ export const AuthService = {
         }
     },
 
-    async getUser(): Promise<{ user: User | null; error: AuthError | null }> {
+    async getUser(): Promise<{ user: User | null; error: AppAuthError | null }> {
         try {
             const { data: { user }, error } = await supabase.auth.getUser();
             if (error) {
                 console.error('Get user error:', error);
-                return { user: null, error };
+                return { user: null, error: convertAuthError(error) };
             }
 
             if (!user) {
@@ -180,7 +202,7 @@ export const AuthService = {
             console.error('Unexpected get user error:', error);
             return {
                 user: null,
-                error: {
+                error: isAuthError(error) ? convertAuthError(error) : {
                     message: error instanceof Error ? error.message : 'Failed to get user',
                     name: 'AuthError'
                 }
@@ -192,13 +214,13 @@ export const AuthService = {
         email?: string;
         password?: string;
         data?: Record<string, any>;
-    }): Promise<{ user: User | null; error: AuthError | null }> {
+    }): Promise<{ user: User | null; error: AppAuthError | null }> {
         try {
             const { data: { user }, error } = await supabase.auth.updateUser(updates);
 
             if (error) {
                 console.error('Update user error:', error);
-                return { user: null, error };
+                return { user: null, error: convertAuthError(error) };
             }
 
             return { user, error: null };
@@ -206,7 +228,7 @@ export const AuthService = {
             console.error('Unexpected update user error:', error);
             return {
                 user: null,
-                error: {
+                error: isAuthError(error) ? convertAuthError(error) : {
                     message: error instanceof Error ? error.message : 'User update failed',
                     name: 'AuthError'
                 }
@@ -214,8 +236,7 @@ export const AuthService = {
         }
     },
 
-    // Note: This function must be implemented on the backend using the Supabase Admin API with service role key
-    async deleteUser(): Promise<{ error: AuthError | null }> {
+    async deleteUser(): Promise<{ error: AppAuthError | null }> {
         console.warn('deleteUser should be handled via a secure backend endpoint using the Supabase Admin API.');
         return {
             error: {
@@ -225,7 +246,7 @@ export const AuthService = {
         };
     },
 
-    async sendMagicLink(email: string): Promise<{ error: AuthError | null }> {
+    async sendMagicLink(email: string): Promise<{ error: AppAuthError | null }> {
         try {
             const { error } = await supabase.auth.signInWithOtp({
                 email,
@@ -236,13 +257,13 @@ export const AuthService = {
 
             if (error) {
                 console.error('Magic link error:', error);
-                return { error };
+                return { error: convertAuthError(error) };
             }
             return { error: null };
         } catch (error) {
             console.error('Unexpected magic link error:', error);
             return {
-                error: {
+                error: isAuthError(error) ? convertAuthError(error) : {
                     message: error instanceof Error ? error.message : 'Failed to send magic link',
                     name: 'AuthError'
                 }
@@ -250,13 +271,13 @@ export const AuthService = {
         }
     },
 
-    async getSession(): Promise<{ session: Session | null; error: AuthError | null }> {
+    async getSession(): Promise<{ session: Session | null; error: AppAuthError | null }> {
         try {
             const { data: { session }, error } = await supabase.auth.getSession();
 
             if (error) {
                 console.error('Get session error:', error);
-                return { session: null, error };
+                return { session: null, error: convertAuthError(error) };
             }
 
             return { session, error: null };
@@ -264,7 +285,7 @@ export const AuthService = {
             console.error('Unexpected get session error:', error);
             return {
                 session: null,
-                error: {
+                error: isAuthError(error) ? convertAuthError(error) : {
                     message: error instanceof Error ? error.message : 'Failed to get session',
                     name: 'AuthError'
                 }
@@ -272,7 +293,7 @@ export const AuthService = {
         }
     },
 
-    async loginWithSocial(provider: Provider): Promise<{ error: AuthError | null }> {
+    async loginWithSocial(provider: Provider): Promise<{ error: AppAuthError | null }> {
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
@@ -284,13 +305,13 @@ export const AuthService = {
 
             if (error) {
                 console.error(`${provider} login error:`, error);
-                return { error };
+                return { error: convertAuthError(error) };
             }
             return { error: null };
         } catch (error) {
             console.error(`Unexpected ${provider} login error:`, error);
             return {
-                error: {
+                error: isAuthError(error) ? convertAuthError(error) : {
                     message: error instanceof Error ? error.message : `${provider} login failed`,
                     name: 'AuthError'
                 }
@@ -298,13 +319,13 @@ export const AuthService = {
         }
     },
 
-    async refreshSession(): Promise<{ session: Session | null; error: AuthError | null }> {
+    async refreshSession(): Promise<{ session: Session | null; error: AppAuthError | null }> {
         try {
             const { data: { session }, error } = await supabase.auth.refreshSession();
 
             if (error) {
                 console.error('Refresh session error:', error);
-                return { session: null, error };
+                return { session: null, error: convertAuthError(error) };
             }
 
             return { session, error: null };
@@ -312,11 +333,22 @@ export const AuthService = {
             console.error('Unexpected refresh session error:', error);
             return {
                 session: null,
-                error: {
+                error: isAuthError(error) ? convertAuthError(error) : {
                     message: error instanceof Error ? error.message : 'Session refresh failed',
                     name: 'AuthError'
                 }
             };
         }
+    },
+    resendVerificationEmail() {
+        console.warn('resendVerificationEmail should be handled via a secure backend endpoint using the Supabase Admin API.');
+        return {
+            error: {
+                message: 'resendVerificationEmail is not available on the client. Use a backend endpoint.',
+                name: 'NotAllowed'
+            }
+        };
+
+
     }
 };
