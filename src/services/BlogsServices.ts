@@ -1,10 +1,11 @@
-import { supabase } from "@/services/UseSupabase.ts";
-import type { PostgrestResponse } from "@supabase/supabase-js";
-import type { BlogsModel, BlogComment, BlogLike, Category, Tag } from "@/models/BlogsModel.ts";
+import {supabase} from "@/services/UseSupabase.ts";
+import type {PostgrestResponse} from "@supabase/supabase-js";
+import type {BlogsModel, BlogComment, BlogLike, Category, Tag} from "@/models/BlogsModel.ts";
 
 interface LikeParams {
     blog_id: string;
-    user_id: string;
+    user_id?: string | null; // Now nullable
+    session_id?: string; // For anonymous users
 }
 
 interface CommentParams {
@@ -17,17 +18,16 @@ interface CommentParams {
 export const BlogsServices = {
     async getBlogs(): Promise<BlogsModel[]> {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('blogs')
                 .select(`
-                    *,
-                    author:author_id(*),
-                    comments:comments(*, user:user_id(*)),
-                    likes:likes(*, user:user_id(*)),
-                  
-                    blog_tags:blog_tags(*, tag:tag_id(*)),
-                    category:category_id(*)
-                `);
+                *,
+                author:author_id(*),
+                comments:comments(*, user:user_id(*)),
+                likes:likes(*, user:user_id(*)),
+                blog_tag_relations(tag:tag_id(*)),
+                category:category_id(*)
+            `);
 
             if (error) throw error;
             if (!data) throw new Error('No blogs found');
@@ -40,17 +40,16 @@ export const BlogsServices = {
 
     async getBlogById(id: string): Promise<BlogsModel> {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('blogs')
                 .select(`
-                    *,
-                    author:author_id(*),
-                    comments:comments(*, user:user_id(*)),
-                    likes:likes(*, user:user_id(*)),
-                  
-                    blog_tags:blog_tags(*, tag:tag_id(*)),
-                    category:category_id(*)
-                `)
+                *,
+                author:author_id(*),
+                comments:comments(*, user:user_id(*)),
+                likes:likes(*, user:user_id(*)),
+                blog_tag_relations(tag:tag_id(*)),
+                category:category_id(*)
+            `)
                 .eq('id', id)
                 .single();
 
@@ -63,6 +62,7 @@ export const BlogsServices = {
         }
     },
 
+
     async createBlog(blogData: Omit<BlogsModel, 'id' | 'created_at' | 'updated_at' | 'likes' | 'comments' | 'blog_subtitles' | 'blog_tags'>): Promise<BlogsModel> {
         try {
             if (!blogData.title || !blogData.main_content || !blogData.author_id) {
@@ -74,7 +74,7 @@ export const BlogsServices = {
                 throw new Error('Invalid author ID format');
             }
 
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('blogs')
                 .insert({
                     ...blogData,
@@ -96,7 +96,7 @@ export const BlogsServices = {
 
     async updateBlog(id: string, updates: Partial<BlogsModel>): Promise<BlogsModel> {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('blogs')
                 .update(updates)
                 .eq('id', id)
@@ -114,7 +114,7 @@ export const BlogsServices = {
 
     async deleteBlog(id: string): Promise<void> {
         try {
-            const { error } = await supabase
+            const {error} = await supabase
                 .from('blogs')
                 .delete()
                 .eq('id', id);
@@ -129,7 +129,7 @@ export const BlogsServices = {
     async getBlogBySlug(slug: string): Promise<BlogsModel> {
         try {
             // Get basic blog info first
-            const { data: blog, error: blogError } = await supabase
+            const {data: blog, error: blogError} = await supabase
                 .from('blogs')
                 .select(`
                 *,
@@ -144,9 +144,9 @@ export const BlogsServices = {
 
             // Then get related data in parallel
             const [
-                { data: comments },
-                { data: likes },
-                { data: tagRelations }
+                {data: comments},
+                {data: likes},
+                {data: tagRelations}
             ] = await Promise.all([
                 supabase.from('comments').select('*, user:user_id(*)').eq('blog_id', blog.id),
                 supabase.from('likes').select('*, user:user_id(*)').eq('blog_id', blog.id),
@@ -167,43 +167,16 @@ export const BlogsServices = {
         }
     },
 
-    async checkUserLike({ blog_id, user_id }: LikeParams): Promise<BlogLike | null> {
+
+    async likeBlog({blog_id, user_id, session_id}: LikeParams): Promise<BlogLike> {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('likes')
-                .select('*')
-                .eq('blog_id', blog_id)
-                .eq('user_id', user_id)
-                .maybeSingle();
-
-            if (error) throw error;
-            return data as BlogLike | null;
-        } catch (error) {
-            console.error('Error checking user like:', error);
-            throw new Error('Failed to check user like');
-        }
-    },
-
-    async unlikeBlog({ blog_id, user_id }: LikeParams): Promise<void> {
-        try {
-            const { error } = await supabase
-                .from('likes')
-                .delete()
-                .eq('blog_id', blog_id)
-                .eq('user_id', user_id);
-
-            if (error) throw error;
-        } catch (error) {
-            console.error('Error unliking blog:', error);
-            throw new Error('Failed to unlike blog');
-        }
-    },
-
-    async likeBlog({ blog_id, user_id }: LikeParams): Promise<BlogLike> {
-        try {
-            const { data, error } = await supabase
-                .from('likes')
-                .insert({ blog_id, user_id })
+                .insert({
+                    blog_id,
+                    user_id,
+                    session_id: user_id ? null : session_id // Store session_id for anonymous users
+                })
                 .select()
                 .single();
 
@@ -211,15 +184,62 @@ export const BlogsServices = {
             return data as BlogLike;
         } catch (error) {
             console.error('Error liking blog:', error);
-            throw new Error('Failed to like blog');
+            throw error;
         }
     },
 
-    async addComment({ blog_id, user_id, content, parent_comment_id = null }: CommentParams): Promise<BlogComment> {
+    async unlikeBlog({blog_id, user_id, session_id}: LikeParams): Promise<void> {
         try {
-            const { data, error } = await supabase
+            const query = supabase
+                .from('likes')
+                .delete();
+
+            if (user_id) {
+                query.eq('user_id', user_id);
+            } else {
+                query.eq('session_id', session_id);
+            }
+
+            const {error} = await query
+                .eq('blog_id', blog_id);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error unliking blog:', error);
+            throw error;
+        }
+    },
+
+    async checkUserLike({blog_id, user_id, session_id}: LikeParams): Promise<boolean> {
+        try {
+            const query = supabase
+                .from('likes')
+                .select()
+                .eq('blog_id', blog_id);
+
+            if (user_id) {
+                query.eq('user_id', user_id);
+            } else {
+                query.eq('session_id', session_id);
+            }
+
+            const {data, error} = await query.single();
+
+            if (error && error.code !== 'PGRST116') {
+                throw error;
+            }
+            return !!data;
+        } catch (error) {
+            console.error('Error checking like:', error);
+            throw error;
+        }
+    },
+
+    async addComment({blog_id, user_id, content, parent_comment_id = null}: CommentParams): Promise<BlogComment> {
+        try {
+            const {data, error} = await supabase
                 .from('comments')
-                .insert({ blog_id, user_id, content, parent_comment_id })
+                .insert({blog_id, user_id, content, parent_comment_id})
                 .select()
                 .single();
 
@@ -233,7 +253,7 @@ export const BlogsServices = {
 
     async fetchBlogsByCategory(categoryId: string): Promise<BlogsModel[]> {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('blogs')
                 .select(`
                     *,
@@ -254,7 +274,7 @@ export const BlogsServices = {
 
     async fetchAllCategories(): Promise<Category[]> {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('category')
                 .select('*');
 
@@ -269,7 +289,7 @@ export const BlogsServices = {
 
     async publishBlog(id: string): Promise<BlogsModel> {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('blogs')
                 .update({
                     is_published: true,
@@ -290,7 +310,7 @@ export const BlogsServices = {
 
     async unpublishBlog(id: string): Promise<BlogsModel> {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('blogs')
                 .update({
                     is_published: false,
@@ -311,7 +331,7 @@ export const BlogsServices = {
 
     async getPublishedBlogs(): Promise<BlogsModel[]> {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('blogs')
                 .select(`
                     *,
@@ -320,7 +340,7 @@ export const BlogsServices = {
                     likes:likes(*)
                 `)
                 .eq('is_published', true)
-                .order('published_at', { ascending: false });
+                .order('published_at', {ascending: false});
 
             if (error) throw error;
             return data as BlogsModel[];
@@ -332,7 +352,7 @@ export const BlogsServices = {
 
     async fetchPublishedBlogsByCategory(categoryId: string): Promise<BlogsModel[]> {
         try {
-            const { data, error } = await supabase
+            const {data, error} = await supabase
                 .from('blogs')
                 .select(`
                     *,
@@ -342,7 +362,7 @@ export const BlogsServices = {
                 `)
                 .eq('category_id', categoryId)
                 .eq('is_published', true)
-                .order('published_at', { ascending: false });
+                .order('published_at', {ascending: false});
 
             if (error) throw error;
             return data as BlogsModel[];
