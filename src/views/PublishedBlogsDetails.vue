@@ -15,12 +15,8 @@
   </div>
 
   <div v-else-if="blog" class="max-w-4xl mx-auto py-8 px-4 relative">
-
-
-    <!-- Fixed like/comment counts on the side -->
-    <div
-        class="fixed hidden md:block left-32 top-1/2 transform -translate-y-1/2 z-10  flex-col items-center space-y-4 bg-white p-2 rounded-lg shadow-lg"
-    >
+    <div class="fixed hidden md:block left-32 top-1/2 bg-white
+     transform -translate-y-1/2 z-10 flex-col items-center space-y-4  p-2 rounded-lg shadow-lg border-2 border-pink-400">
       <button
           @click="toggleLike"
           class="flex flex-col items-center group"
@@ -41,7 +37,6 @@
             />
           </svg>
         </div>
-
         <span class="text-sm font-medium mt-1">{{ blog.like_count || 0 }}</span>
       </button>
 
@@ -65,7 +60,6 @@
       </div>
     </div>
 
-    <!-- Blog Content -->
     <header class="mb-12">
       <img
           :src="blog.cover_image || '/cover_image.jpeg'"
@@ -89,33 +83,13 @@
       <p class="text-xl text-gray-600 mb-6">{{ blog.subtitle }}</p>
     </header>
 
-    <!-- Delete confirmation modal -->
-    <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white p-6 rounded-lg max-w-sm w-full">
-        <h3 class="text-lg font-bold mb-4">Confirm Deletion</h3>
-        <p class="mb-6">Are you sure you want to delete this blog?</p>
-        <div class="flex justify-end space-x-3">
-          <button @click="showDeleteModal = false" class="px-4 py-2 border rounded-md">Cancel</button>
-          <button
-              @click="deleteBlog"
-              class="bg-red-600 text-white px-4 py-2 rounded-md"
-              :disabled="isDeleting"
-          >
-            {{ isDeleting ? 'Deleting...' : 'Delete' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
     <article class="prose max-w-none mb-12">
       <div v-html="blog.main_content"></div>
-
     </article>
 
     <section class="border-t pt-8">
       <h3 class="text-xl font-bold mb-6">Comments ({{ blog.comment_count || 0 }})</h3>
 
-      <!-- Comment form (shown to all users) -->
       <div class="mb-8">
         <textarea
             v-model="newComment"
@@ -126,9 +100,10 @@
         <button
             @click="addComment"
             class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            :disabled="!newComment.trim()"
+            :disabled="!newComment.trim() || isCommenting"
         >
-          Post Comment
+          <span v-if="!isCommenting">Post Comment</span>
+          <span v-else>Posting...</span>
         </button>
       </div>
 
@@ -169,14 +144,18 @@
   <div v-else class="max-w-4xl mx-auto py-8 px-4 text-center">
     <p class="text-xl">Blog post not found</p>
   </div>
+
+  <div v-if="showToast" class="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded">
+    {{ toastMessage }}
+  </div>
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
-import {BlogsServices} from '@/services/BlogsServices'
-import {AuthService} from '@/services/AuthService'
-import type {BlogsModel, BlogComment} from "@/models/BlogsModel"
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { BlogsServices } from '@/services/BlogsServices'
+import { AuthService } from '@/services/AuthService'
+import type { BlogsModel, BlogComment } from "@/models/BlogsModel"
 
 const route = useRoute()
 const router = useRouter()
@@ -186,109 +165,97 @@ const user = ref<any>(null)
 const newComment = ref('')
 const isLiked = ref(false)
 const loading = ref(true)
-const showDeleteModal = ref(false)
-const isDeleting = ref(false)
+const isCommenting = ref(false)
+const showToast = ref(false)
+const toastMessage = ref('')
 
-const isPublished = computed(() => blog.value?.is_published)
-const isAuthor = computed(() => user.value?.id === blog.value?.author_id)
+const showToastMessage = (message: string) => {
+  toastMessage.value = message
+  showToast.value = true
+  setTimeout(() => {
+    showToast.value = false
+  }, 3000)
+}
 
 const fetchBlog = async () => {
   try {
     loading.value = true
     const response = await BlogsServices.getBlogBySlug(route.params.slug as string)
-    console.log(response)
-
     if (!response) {
       await router.push('/404')
       return
     }
-
     blog.value = response
-    await checkUserLike()
   } catch (error) {
-    console.error('Error loading blog:', error)
     await router.push('/404')
   } finally {
     loading.value = false
   }
 }
 
-const publishBlog = async () => {
-  if (!blog.value) return
-  try {
-    await BlogsServices.publishBlog(blog.value.id)
-    blog.value.is_published = true
-  } catch (error) {
-    console.error('Error publishing blog:', error)
-  }
-}
+const sessionId = ref(generateSessionId());
 
-const unPublishBlog = async () => {
-  if (!blog.value) return
-  try {
-    await BlogsServices.unpublishBlog(blog.value.id)
-    blog.value.is_published = false
-  } catch (error) {
-    console.error('Error unpublishing blog:', error)
-  }
-}
+function generateSessionId(): string {
 
-const checkUserLike = async () => {
-  try {
-    const session = await AuthService.getSession()
-    if (session.session?.user) {
-      user.value = session.session.user
-      const response = await BlogsServices.checkUserLike({
-        blog_id: blog.value?.id || '',
-        user_id: session.session.user.id
-      })
-      isLiked.value = !!response
-    }
-  } catch (error) {
-    console.error('Error checking like:', error)
-  }
+  const storedId = localStorage.getItem('blog_session_id');
+  if (storedId) return storedId;
+
+  const newId = crypto.randomUUID();
+  localStorage.setItem('blog_session_id', newId);
+  return newId;
 }
 
 const toggleLike = async () => {
   try {
-    const session = await AuthService.getSession()
-    if (!session.session?.user) {
-      // Optionally redirect to login or show a message
-      return
-    }
+    if (!blog.value) return;
 
     if (isLiked.value) {
       await BlogsServices.unlikeBlog({
-        blog_id: blog.value?.id || '',
-        user_id: session.session.user.id
-      })
-      if (blog.value) blog.value.like_count = Math.max(0, (blog.value.like_count || 0) - 1)
+        blog_id: blog.value.id,
+        user_id: user.value?.id,
+        session_id: user.value ? null : sessionId.value
+      });
+      blog.value.like_count = Math.max(0, (blog.value.like_count || 0) - 1);
     } else {
       await BlogsServices.likeBlog({
-        blog_id: blog.value?.id || '',
-        user_id: session.session.user.id
-      })
-      if (blog.value) blog.value.like_count = (blog.value.like_count || 0) + 1
+        blog_id: blog.value.id,
+        user_id: user.value?.id,
+        session_id: user.value ? null : sessionId.value
+      });
+      blog.value.like_count = (blog.value.like_count || 0) + 1;
     }
-    isLiked.value = !isLiked.value
+    isLiked.value = !isLiked.value;
   } catch (error) {
-    console.error('Like action failed:', error)
+    showToastMessage('Failed to update like');
   }
-}
+};
+
+const checkUserLike = async () => {
+  if (!blog.value) {
+    isLiked.value = false;
+    return;
+  }
+
+  try {
+    isLiked.value = await BlogsServices.checkUserLike({
+      blog_id: blog.value.id,
+      user_id: user.value?.id,
+      session_id: user.value ? null : sessionId.value
+    });
+  } catch (error) {
+    console.error('Error checking like:', error);
+    isLiked.value = false;
+  }
+};
 
 const addComment = async () => {
   if (!newComment.value.trim() || !blog.value) return
 
   try {
-    const session = await AuthService.getSession()
-    if (!session.session?.user) {
-      // Optionally redirect to login or show a message
-      return
-    }
-
+    isCommenting.value = true
     const response = await BlogsServices.addComment({
       blog_id: blog.value.id,
-      user_id: session.session.user.id,
+      user_id: user.value?.id || null,
       content: newComment.value
     })
 
@@ -296,12 +263,10 @@ const addComment = async () => {
     blog.value.comment_count = (blog.value.comment_count || 0) + 1
     newComment.value = ''
   } catch (error) {
-    console.error('Failed to add comment:', error)
+    showToastMessage('Failed to add comment')
+  } finally {
+    isCommenting.value = false
   }
-}
-
-const handleReply = (comment: BlogComment) => {
-  newComment.value = `@${comment.user?.name || 'user'} `
 }
 
 const nestedComments = computed(() => {
@@ -333,25 +298,18 @@ const formatDate = (dateString: string | null) => {
   })
 }
 
-const confirmDelete = () => showDeleteModal.value = true
-
-const deleteBlog = async () => {
-  if (!blog.value?.id) return
-  isDeleting.value = true
+onMounted(async () => {
+  await fetchBlog()
   try {
-    await BlogsServices.deleteBlog(blog.value.id)
-    router.push('/blogs')
+    const session = await AuthService.getSession()
+    if (session.session?.user) {
+      user.value = session.session.user
+    }
   } catch (error) {
-    console.error('Delete failed:', error)
-  } finally {
-    isDeleting.value = false
-    showDeleteModal.value = false
+    console.error('Error checking session:', error)
   }
-}
-
-onMounted(fetchBlog)
+})
 </script>
 
 <style scoped>
-/* Add any custom styles here */
 </style>
