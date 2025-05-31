@@ -1,7 +1,7 @@
 <template>
   <Analytics/>
   <div class="min-h-screen bg-gray-50 flex flex-col">
-    <header class="backdrop-blur-sm bg-white/70 shadow-sm fixed w-full z-10">
+    <header class="backdrop-blur-sm bg-white/70 shadow-sm fixed w-full ">
       <div class="container mx-auto px-4 py-4">
         <div class="flex justify-around items-center">
           <!-- Logo -->
@@ -126,7 +126,7 @@
     </header>
 
     <!-- Main content with padding to account for fixed header -->
-    <main class="pt-16 flex-1">
+    <main>
       <router-view/>
     </main>
 
@@ -221,12 +221,7 @@ onMounted(async () => {
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap');
 
-html {
-  font-family: 'Inter', sans-serif;
-  scroll-behavior: smooth;
-}
 
 .line-clamp-3 {
   display: -webkit-box;
