@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-lg">
     <h1 class="text-3xl font-bold mb-6 text-center text-indigo-700">
-      {{ blogData.id ? 'Edit Blog' : 'Create Blog' }}
+      Create Blog
     </h1>
 
     <div class="mb-10 p-6 border border-gray-200 rounded-lg">
@@ -161,7 +161,7 @@
             class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-md"
             :disabled="isSubmitting"
         >
-          <span v-if="!isSubmitting">Save Changes</span>
+          <span v-if="!isSubmitting">Create Blog</span>
           <span v-else class="flex items-center">
             <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
                  viewBox="0 0 24 24">
@@ -169,7 +169,7 @@
               <path class="opacity-75" fill="currentColor"
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Saving...
+            Creating...
           </span>
         </button>
         <button
@@ -186,7 +186,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { supabase } from '@/services/UseSupabase';
 import { BlogsServices } from "@/services/BlogsServices";
 import type { BlogsModel } from "@/models/BlogsModel";
@@ -202,11 +202,9 @@ interface Tag {
   name: string;
 }
 
-const route = useRoute();
 const router = useRouter();
 
 const blogData = ref<Partial<BlogsModel>>({
-  id: '',
   title: '',
   slug: '',
   category_id: '',
@@ -285,36 +283,6 @@ const removeTag = (tagId: string) => {
   selectedTags.value = selectedTags.value.filter(id => id !== tagId);
 };
 
-const fetchBlog = async () => {
-  try {
-    const blogId = route.params.id as string;
-    if (!blogId) return;
-
-    const blog = await BlogsServices.getBlogById(blogId);
-    if (!blog) {
-      router.push('/404');
-      return;
-    }
-
-    blogData.value = {
-      ...blog,
-      category_id: blog.category_id || ''
-    };
-
-    const { data: tagRelations } = await supabase
-        .from('blog_tag_relations')
-        .select('tag_id')
-        .eq('blog_id', blogId);
-
-    if (tagRelations) {
-      selectedTags.value = tagRelations.map(tr => tr.tag_id);
-    }
-  } catch (error) {
-    console.error('Error fetching blog:', error);
-    router.push('/404');
-  }
-};
-
 const fetchCategories = async () => {
   try {
     const { data } = await supabase
@@ -352,12 +320,9 @@ const submitBlog = async () => {
   try {
     blogData.value.reading_time_minutes = calculateReadingTime(blogData.value.main_content || '');
 
-    const currentDate = new Date().toISOString();
-    blogData.value.updated_at = currentDate;
-
-    const { data: updatedBlog, error: blogError } = await supabase
+    const { data: newBlog, error: blogError } = await supabase
         .from('blogs')
-        .upsert({
+        .insert({
           ...blogData.value,
           published_at: blogData.value.is_published ? new Date().toISOString() : null
         })
@@ -366,14 +331,9 @@ const submitBlog = async () => {
 
     if (blogError) throw blogError;
 
-    await supabase
-        .from('blog_tag_relations')
-        .delete()
-        .eq('blog_id', blogData.value.id);
-
     if (selectedTags.value.length > 0) {
       const tagRelations = selectedTags.value.map(tagId => ({
-        blog_id: blogData.value.id,
+        blog_id: newBlog.id,
         tag_id: tagId
       }));
 
@@ -382,40 +342,32 @@ const submitBlog = async () => {
           .insert(tagRelations);
     }
 
-    router.push(`/blog/${blogData.value.slug}`);
+    await router.push(`/blog/${newBlog.slug}`);
   } catch (error) {
-    console.error('Blog update failed:', error);
+    console.error('Blog creation failed:', error);
   } finally {
     isSubmitting.value = false;
   }
 };
 
 const resetForm = () => {
-  if (blogData.value.id) {
-    fetchBlog();
-  } else {
-    blogData.value = {
-      id: '',
-      title: '',
-      slug: '',
-      category_id: '',
-      main_content: '',
-      cover_image: '',
-      cover_image_credit: '',
-      excerpt: '',
-      is_published: false,
-      reading_time_minutes: 0,
-    };
-    selectedTags.value = [];
-  }
+  blogData.value = {
+    title: '',
+    slug: '',
+    category_id: '',
+    main_content: '',
+    cover_image: '',
+    cover_image_credit: '',
+    excerpt: '',
+    is_published: false,
+    reading_time_minutes: 0,
+  };
+  selectedTags.value = [];
 };
 
 onMounted(async () => {
   await fetchCategories();
   await fetchTags();
-  if (route.params.id) {
-    await fetchBlog();
-  }
 });
 
 watch(() => blogData.value.title, (newTitle) => {
@@ -424,4 +376,3 @@ watch(() => blogData.value.title, (newTitle) => {
   }
 });
 </script>
-
