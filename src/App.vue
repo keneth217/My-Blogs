@@ -1,7 +1,7 @@
 <template>
   <Analytics/>
   <div class="min-h-screen bg-gray-50 flex flex-col">
-    <header class="backdrop-blur-sm bg-white/70 shadow-sm fixed w-full ">
+    <header class="backdrop-blur-sm bg-white/70 shadow-sm fixed w-full z-10">
       <div class="container mx-auto px-4 py-4">
         <div class="flex justify-around items-center">
           <!-- Logo -->
