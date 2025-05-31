@@ -213,14 +213,14 @@ const toggleLike = async () => {
       await BlogsServices.unlikeBlog({
         blog_id: blog.value.id,
         user_id: user.value?.id,
-        session_id: user.value ? null : sessionId.value
+        session_id: user.value ? undefined : sessionId.value
       });
       blog.value.like_count = Math.max(0, (blog.value.like_count || 0) - 1);
     } else {
       await BlogsServices.likeBlog({
         blog_id: blog.value.id,
         user_id: user.value?.id,
-        session_id: user.value ? null : sessionId.value
+        session_id: user.value ? undefined : sessionId.value
       });
       blog.value.like_count = (blog.value.like_count || 0) + 1;
     }
@@ -240,7 +240,7 @@ const checkUserLike = async () => {
     isLiked.value = await BlogsServices.checkUserLike({
       blog_id: blog.value.id,
       user_id: user.value?.id,
-      session_id: user.value ? null : sessionId.value
+      session_id: user.value ? undefined : sessionId.value
     });
   } catch (error) {
     console.error('Error checking like:', error);

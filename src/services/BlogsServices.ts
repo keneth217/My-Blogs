@@ -4,8 +4,8 @@ import type {BlogsModel, BlogComment, BlogLike, Category, Tag} from "@/models/Bl
 
 interface LikeParams {
     blog_id: string;
-    user_id?: string | null; // Now nullable
-    session_id?: string; // For anonymous users
+    user_id?: string | null;
+    session_id?: string;
 }
 
 interface CommentParams {
