@@ -68,12 +68,51 @@
             <span class="px-2 bg-white text-gray-500">Or continue with</span>
           </div>
         </div>
+        <!-- Warning Modal -->
+        <transition name="fade">
+          <div
+              v-if="showSocialModal"
+              class="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            <!-- Overlay with red tint -->
+            <div
+                class="absolute inset-0 bg-red-900/30 backdrop-blur-sm"
+                @click="showSocialModal = false"
+            ></div>
+
+            <!-- Modal with red borders -->
+            <div
+                class="relative z-10 w-full max-w-md bg-white p-6 rounded-lg border-4 border-red-500 animate-blink-border shadow-xl"
+            >
+
+            <!-- Blurry red border effect -->
+              <div class="absolute -inset-2 rounded-lg bg-red-500/20 blur-md"></div>
+
+              <div class="relative">
+                <h3 class="text-lg font-bold text-red-700 mb-2">Access Restricted</h3>
+                <p class="text-red-600">
+                  You are not allowed to login using this button. Only authorized personnel may proceed.
+                </p>
+
+                <div class="mt-4 flex justify-end">
+                  <button
+                      @click="showSocialModal = false"
+                      class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                  >
+                    Understood
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+
 
         <!-- Social login buttons -->
         <div class="grid grid-cols-2 gap-3">
           <button
               type="button"
-              @click="loginWithProvider('google')"
+              @click="showSocialWarning"
               class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
@@ -84,7 +123,7 @@
 
           <button
               type="button"
-              @click="loginWithProvider('github')"
+              @click="showSocialWarning"
               class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -102,9 +141,9 @@
       <div class="mt-6 text-center">
         <p class="text-sm text-gray-600">
           Don't have an account?
-          <router-link to="/register" class="text-blue-600 hover:text-blue-800 hover:underline">
+          <button @click="showSocialWarning"  class="text-blue-600 hover:text-blue-800 hover:underline">
             Sign up
-          </router-link>
+          </button>
         </p>
       </div>
     </div>
@@ -128,6 +167,11 @@ interface FormErrors {
   email?: string;
   password?: string;
 }
+const showSocialModal = ref(false);
+
+const showSocialWarning = () => {
+  showSocialModal.value = true;
+};
 
 const loginForm = reactive<LoginForm>({
   email: '',
@@ -242,3 +286,31 @@ const loginWithProvider = async (provider: 'google' | 'github') => {
   }
 };
 </script>
+
+<style scoped>
+/* Fade transition for modal */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@keyframes blink-border {
+  0%, 100% {
+    border-color: rgba(239, 68, 68, 0.5); /* Tailwind red-500/50 */
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    border-color: rgba(239, 68, 68, 1); /* Full red */
+    box-shadow: 0 0 10px 2px rgba(239, 68, 68, 0.7);
+  }
+}
+
+.animate-blink-border {
+  animation: blink-border 1.2s infinite;
+}
+</style>
